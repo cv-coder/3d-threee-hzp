@@ -1,0 +1,342 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import dynamic from 'next/dynamic';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import MaterialControls from '@/components/3d/MaterialControls';
+import { formatPrice } from '@/lib/utils';
+import { ArrowLeft, Save, Send, Building2 } from 'lucide-react';
+import type { Product, Profile, MaterialConfig } from '@/types/database';
+import type { User } from '@supabase/supabase-js';
+
+// 动态导入3D组件（避免SSR问题）
+const Configurator3D = dynamic(
+  () => import('@/components/3d/Configurator3D'),
+  { ssr: false }
+);
+
+interface ProductConfiguratorProps {
+  product: Product & {
+    vendor?: Profile;
+    model_asset?: any;
+  };
+  modelUrl?: string;
+  user: User | null;
+  profile: Profile | null;
+}
+
+export default function ProductConfigurator({
+  product,
+  modelUrl,
+  user,
+  profile,
+}: ProductConfiguratorProps) {
+  const router = useRouter();
+  const [config, setConfig] = useState<MaterialConfig>(
+    product.config_defaults || {
+      color: '#ffffff',
+      roughness: 0.3,
+      metalness: 0.1,
+    }
+  );
+  const [saving, setSaving] = useState(false);
+  const [inquiring, setInquiring] = useState(false);
+  const [showInquiryForm, setShowInquiryForm] = useState(false);
+  const [inquiryData, setInquiryData] = useState({
+    quantity: product.moq.toString(),
+    message: '',
+  });
+
+  const handleSaveDesign = async () => {
+    if (!user) {
+      alert('请先登录以保存设计方案');
+      router.push('/login');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.from('design_sessions').insert({
+        buyer_id: user.id,
+        product_id: product.id,
+        session_name: `${product.name} - 定制方案`,
+        config_json: config,
+        status: 'saved',
+      });
+
+      if (error) throw error;
+      alert('设计方案已保存！');
+    } catch (error) {
+      console.error('Save design error:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleInquiry = async () => {
+    if (!user) {
+      alert('请先登录以发起询价');
+      router.push('/login');
+      return;
+    }
+
+    if (profile?.role !== 'buyer') {
+      alert('只有买家账号可以发起询价');
+      return;
+    }
+
+    setInquiring(true);
+    try {
+      const supabase = createClient();
+      
+      // 先保存设计方案
+      const { data: session, error: sessionError } = await supabase
+        .from('design_sessions')
+        .insert({
+          buyer_id: user.id,
+          product_id: product.id,
+          session_name: `${product.name} - 询价方案`,
+          config_json: config,
+          status: 'submitted',
+        })
+        .select()
+        .single();
+
+      if (sessionError) throw sessionError;
+
+      // 创建询价
+      const { error: inquiryError } = await supabase.from('inquiries').insert({
+        buyer_id: user.id,
+        vendor_id: product.vendor_id,
+        product_id: product.id,
+        design_session_id: session.id,
+        quantity: parseInt(inquiryData.quantity),
+        message: inquiryData.message,
+        status: 'pending',
+      });
+
+      if (inquiryError) throw inquiryError;
+      
+      alert('询价请求已发送！商家会尽快回复您。');
+      setShowInquiryForm(false);
+    } catch (error) {
+      console.error('Inquiry error:', error);
+      alert('询价失败，请重试');
+    } finally {
+      setInquiring(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <Link href="/shop">
+            <Button variant="ghost" size="sm">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              返回展厅
+            </Button>
+          </Link>
+          <Link href="/">
+            <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              3D包材选型系统
+            </h1>
+          </Link>
+          <div className="w-24" /> {/* Spacer for centering */}
+        </div>
+      </header>
+
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* 左侧：3D预览 */}
+          <div className="lg:col-span-2 space-y-6">
+            <Card>
+              <CardContent className="p-0">
+                <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden" style={{ height: '600px' }}>
+                  {modelUrl ? (
+                    <Configurator3D modelUrl={modelUrl} config={config} />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="text-6xl mb-4">📦</div>
+                        <p className="text-gray-500">3D模型加载中...</p>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Guest Mode Watermark */}
+                  {!user && (
+                    <div className="absolute bottom-4 right-4 bg-black/70 text-white px-4 py-2 rounded-lg">
+                      <Link href="/login" className="hover:underline">
+                        登录以保存方案 →
+                      </Link>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* 产品信息 */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-2xl mb-2">{product.name}</CardTitle>
+                    {product.vendor && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Building2 className="h-4 w-4" />
+                        <span>{product.vendor.company_name || '未命名商家'}</span>
+                        {product.vendor.is_verified && (
+                          <span className="text-green-600">✓ 已认证</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {product.price && (
+                    <div className="text-right">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {formatPrice(product.price)}
+                      </div>
+                      <div className="text-sm text-gray-500">起订量: {product.moq}</div>
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700 whitespace-pre-line">
+                  {product.description || '暂无详细描述'}
+                </p>
+                {product.tags && product.tags.length > 0 && (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {product.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 右侧：材质控制和操作 */}
+          <div className="space-y-6">
+            <MaterialControls
+              config={config}
+              onChange={setConfig}
+              disabled={!modelUrl}
+            />
+
+            {/* 操作按钮 */}
+            <Card>
+              <CardHeader>
+                <CardTitle>操作</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <Button
+                  className="w-full"
+                  onClick={handleSaveDesign}
+                  disabled={saving || !user}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  {saving ? '保存中...' : '保存设计方案'}
+                </Button>
+                
+                <Button
+                  className="w-full"
+                  variant="default"
+                  onClick={() => setShowInquiryForm(true)}
+                  disabled={!user || profile?.role !== 'buyer'}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  发起询价
+                </Button>
+
+                {!user && (
+                  <p className="text-xs text-center text-gray-500">
+                    登录后可保存方案和发起询价
+                  </p>
+                )}
+                
+                {user && profile?.role === 'vendor' && (
+                  <p className="text-xs text-center text-red-500">
+                    商家账号不能发起询价
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 询价表单 */}
+            {showInquiryForm && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>发起询价</CardTitle>
+                  <CardDescription>告诉商家您的需求</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="quantity">订购数量 *</Label>
+                    <Input
+                      id="quantity"
+                      type="number"
+                      min={product.moq}
+                      value={inquiryData.quantity}
+                      onChange={(e) =>
+                        setInquiryData({ ...inquiryData, quantity: e.target.value })
+                      }
+                    />
+                    <p className="text-xs text-gray-500">
+                      最小起订量: {product.moq}
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="message">留言</Label>
+                    <Textarea
+                      id="message"
+                      value={inquiryData.message}
+                      onChange={(e) =>
+                        setInquiryData({ ...inquiryData, message: e.target.value })
+                      }
+                      placeholder="请描述您的需求、交期要求等..."
+                      rows={4}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      className="flex-1"
+                      onClick={handleInquiry}
+                      disabled={inquiring}
+                    >
+                      {inquiring ? '提交中...' : '提交询价'}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowInquiryForm(false)}
+                    >
+                      取消
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

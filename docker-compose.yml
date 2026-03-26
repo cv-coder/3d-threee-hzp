@@ -1,0 +1,105 @@
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    image: postgres:16-alpine
+    container_name: 3d-packaging-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-packaging_saas}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - packaging-network
+
+  # MinIO 对象存储 (S3 兼容)
+  minio:
+    image: minio/minio:latest
+    container_name: 3d-packaging-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - packaging-network
+
+  # MinIO 初始化服务 (创建 Buckets 和设置策略)
+  minio-init:
+    image: minio/mc:latest
+    container_name: 3d-packaging-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Waiting for MinIO to be ready...';
+      sleep 5;
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
+      
+      echo 'Creating buckets...';
+      /usr/bin/mc mb myminio/3d-models --ignore-existing;
+      /usr/bin/mc mb myminio/thumbnails --ignore-existing;
+      /usr/bin/mc mb myminio/logos --ignore-existing;
+      /usr/bin/mc mb myminio/snapshots --ignore-existing;
+      
+      echo 'Setting bucket policies...';
+      /usr/bin/mc anonymous set download myminio/3d-models;
+      /usr/bin/mc anonymous set download myminio/thumbnails;
+      
+      echo 'MinIO initialization complete!';
+      exit 0;
+      "
+    networks:
+      - packaging-network
+
+  # Redis (可选 - 用于会话缓存和队列)
+  redis:
+    image: redis:7-alpine
+    container_name: 3d-packaging-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - packaging-network
+
+volumes:
+  postgres_data:
+    driver: local
+  minio_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  packaging-network:
+    driver: bridge

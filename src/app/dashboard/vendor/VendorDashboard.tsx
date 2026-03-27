@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Package, Upload, FileBox, LogOut, Settings } from 'lucide-react';
-import type { Profile, Product, Asset } from '@/types/database';
+import type { Profile, Product } from '@/types/database';
 import ModelUpload from './components/ModelUpload';
 import ProductList from './components/ProductList';
 import ProductCreator from './components/ProductCreator';
@@ -21,7 +21,6 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [products, setProducts] = useState<Product[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -29,21 +28,22 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
   }, []);
 
   const loadData = async () => {
-    const supabase = createClient();
-    
-    const [productsRes, assetsRes] = await Promise.all([
-      supabase.from('products').select('*').eq('vendor_id', profile.id).order('created_at', { ascending: false }),
-      supabase.from('assets').select('*').eq('vendor_id', profile.id).eq('status', 'ready').order('created_at', { ascending: false }),
-    ]);
-
-    if (productsRes.data) setProducts(productsRes.data);
-    if (assetsRes.data) setAssets(assetsRes.data);
-    setLoading(false);
+    try {
+      // 获取产品列表
+      const res = await fetch('/api/products');
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(data.products || []);
+      }
+    } catch (error) {
+      console.error('Load data error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut({ redirect: false });
     router.push('/');
     router.refresh();
   };
@@ -125,15 +125,17 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-2xl">
-                        {products.filter(p => p.status === 'active').length}
+                        {products.filter((p) => p.status === 'active').length}
                       </CardTitle>
                       <CardDescription>上架中</CardDescription>
                     </CardHeader>
                   </Card>
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-2xl">{assets.length}</CardTitle>
-                      <CardDescription>3D模型</CardDescription>
+                      <CardTitle className="text-2xl">
+                        {products.filter(p => p.status === 'draft').length}
+                      </CardTitle>
+                      <CardDescription>草稿</CardDescription>
                     </CardHeader>
                   </Card>
                 </div>
@@ -170,17 +172,15 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                       <div>
                         <h4 className="font-semibold mb-1">创建产品</h4>
                         <p className="text-sm text-gray-600">
-                          选择已上传的模型，填写产品信息并设置默认材质
+                          填写产品信息，上传3D模型并设置默认材质
                         </p>
-                        {assets.length > 0 && (
-                          <Button
-                            size="sm"
-                            className="mt-2"
-                            onClick={() => setActiveTab('create-product')}
-                          >
-                            创建产品
-                          </Button>
-                        )}
+                        <Button
+                          size="sm"
+                          className="mt-2"
+                          onClick={() => setActiveTab('products')}
+                        >
+                          管理产品
+                        </Button>
                       </div>
                     </div>
 
@@ -219,7 +219,6 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
             {activeTab === 'create-product' && (
               <ProductCreator
                 vendorId={profile.id}
-                assets={assets}
                 onSuccess={() => {
                   loadData();
                   setActiveTab('products');

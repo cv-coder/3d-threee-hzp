@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,42 +39,52 @@ export default function RegisterPage() {
       return;
     }
 
-    const supabase = createClient();
-
-    const { data, error: signUpError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: {
-        data: {
+    try {
+      // 调用注册 API
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
           role: formData.role,
           company_name: formData.companyName,
-        },
-      },
-    });
+        }),
+      });
 
-    if (signUpError) {
-      setError(signUpError.message);
-      setLoading(false);
-      return;
-    }
+      const data = await res.json();
 
-    if (data.user) {
-      // 注册成功，更新 profile 信息
-      await supabase
-        .from('profiles')
-        .update({ company_name: formData.companyName })
-        .eq('id', data.user.id);
-
-      // 根据角色重定向
-      if (formData.role === 'vendor') {
-        router.push('/dashboard/vendor');
-      } else {
-        router.push('/dashboard/buyer');
+      if (!res.ok) {
+        setError(data.error || '注册失败，请稍后重试');
+        setLoading(false);
+        return;
       }
-      router.refresh();
-    }
 
-    setLoading(false);
+      // 注册成功后自动登录
+      const signInResult = await signIn('credentials', {
+        email: formData.email,
+        password: formData.password,
+        redirect: false,
+      });
+
+      if (signInResult?.ok) {
+        // 根据角色重定向
+        if (formData.role === 'vendor') {
+          router.push('/dashboard/vendor');
+        } else {
+          router.push('/dashboard/buyer');
+        }
+        router.refresh();
+      } else {
+        // 注册成功但登录失败，引导用户去登录页
+        alert('注册成功！请登录');
+        router.push('/login');
+      }
+    } catch (err) {
+      setError('注册失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

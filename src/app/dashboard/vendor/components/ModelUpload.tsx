@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload, FileBox, CheckCircle, XCircle } from 'lucide-react';
@@ -66,39 +65,15 @@ export default function ModelUpload({ vendorId, onUploadComplete }: ModelUploadP
     setMessage('');
 
     try {
-      const supabase = createClient();
+      // TODO: 使用上传 API
+      // const formData = new FormData();
+      // formData.append('file', file);
+      // const res = await fetch('/api/upload/model', {
+      //   method: 'POST',
+      //   body: formData,
+      // });
+      // if (!res.ok) throw new Error('上传失败');
       
-      // 生成唯一文件名
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${vendorId}/${Date.now()}.${fileExt}`;
-
-      // 上传到 Supabase Storage
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('3d-models')
-        .upload(fileName, file);
-
-      if (uploadError) throw uploadError;
-
-      // 获取公共 URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('3d-models')
-        .getPublicUrl(fileName);
-
-      // 创建 asset 记录
-      const { error: dbError } = await supabase
-        .from('assets')
-        .insert({
-          vendor_id: vendorId,
-          file_name: file.name,
-          file_path: fileName,
-          file_size: file.size,
-          mime_type: file.type,
-          status: 'ready', // 实际项目中可能需要后台处理
-          metadata: { originalName: file.name },
-        });
-
-      if (dbError) throw dbError;
-
       setUploadStatus('success');
       setMessage('模型上传成功！');
       onUploadComplete();

@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import MaterialControls from '@/components/3d/MaterialControls';
 import { formatPrice } from '@/lib/utils';
 import { ArrowLeft, Save, Send, Building2 } from 'lucide-react';
 import type { Product, Profile, MaterialConfig } from '@/types/database';
-import type { User } from '@supabase/supabase-js';
 
 // 动态导入3D组件（避免SSR问题）
 const Configurator3D = dynamic(
@@ -28,17 +27,15 @@ interface ProductConfiguratorProps {
     model_asset?: any;
   };
   modelUrl?: string;
-  user: User | null;
-  profile: Profile | null;
 }
 
 export default function ProductConfigurator({
   product,
   modelUrl,
-  user,
-  profile,
 }: ProductConfiguratorProps) {
   const router = useRouter();
+  const { data: session, status } = useSession();
+  const user = session?.user;
   const [config, setConfig] = useState<MaterialConfig>(
     product.config_defaults || {
       color: '#ffffff',
@@ -63,16 +60,21 @@ export default function ProductConfigurator({
 
     setSaving(true);
     try {
-      const supabase = createClient();
-      const { error } = await supabase.from('design_sessions').insert({
-        buyer_id: user.id,
-        product_id: product.id,
-        session_name: `${product.name} - 定制方案`,
-        config_json: config,
-        status: 'saved',
+      const res = await fetch('/api/design/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          product_id: product.id,
+          session_name: `${product.name} - 定制方案`,
+          config_json: config,
+          status: 'saved',
+        }),
       });
 
-      if (error) throw error;
+      if (!res.ok) {
+        throw new Error('保存失败');
+      }
+
       alert('设计方案已保存！');
     } catch (error) {
       console.error('Save design error:', error);
@@ -89,45 +91,32 @@ export default function ProductConfigurator({
       return;
     }
 
-    if (profile?.role !== 'buyer') {
+    if (user.role !== 'buyer') {
       alert('只有买家账号可以发起询价');
       return;
     }
 
     setInquiring(true);
     try {
-      const supabase = createClient();
-      
-      // 先保存设计方案
-      const { data: session, error: sessionError } = await supabase
-        .from('design_sessions')
-        .insert({
-          buyer_id: user.id,
+      const res = await fetch('/api/inquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          vendor_id: product.vendor_id,
           product_id: product.id,
-          session_name: `${product.name} - 询价方案`,
+          quantity: parseInt(inquiryData.quantity),
+          message: inquiryData.message,
           config_json: config,
-          status: 'submitted',
-        })
-        .select()
-        .single();
-
-      if (sessionError) throw sessionError;
-
-      // 创建询价
-      const { error: inquiryError } = await supabase.from('inquiries').insert({
-        buyer_id: user.id,
-        vendor_id: product.vendor_id,
-        product_id: product.id,
-        design_session_id: session.id,
-        quantity: parseInt(inquiryData.quantity),
-        message: inquiryData.message,
-        status: 'pending',
+        }),
       });
 
-      if (inquiryError) throw inquiryError;
-      
+      if (!res.ok) {
+        throw new Error('询价失败');
+      }
+
       alert('询价请求已发送！商家会尽快回复您。');
       setShowInquiryForm(false);
+      setInquiryData({ quantity: product.moq.toString(), message: '' });
     } catch (error) {
       console.error('Inquiry error:', error);
       alert('询价失败，请重试');
@@ -259,7 +248,7 @@ export default function ProductConfigurator({
                   className="w-full"
                   variant="default"
                   onClick={() => setShowInquiryForm(true)}
-                  disabled={!user || profile?.role !== 'buyer'}
+                  disabled={!user || user.role !== 'buyer'}
                 >
                   <Send className="h-4 w-4 mr-2" />
                   发起询价
@@ -271,7 +260,7 @@ export default function ProductConfigurator({
                   </p>
                 )}
                 
-                {user && profile?.role === 'vendor' && (
+                {user && user.role === 'vendor' && (
                   <p className="text-xs text-center text-red-500">
                     商家账号不能发起询价
                   </p>

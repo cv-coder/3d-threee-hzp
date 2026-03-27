@@ -75,10 +75,10 @@ export const authConfig: NextAuthConfig = {
     async session({ session, token }) {
       // 将 token 中的信息添加到 session
       if (token && session.user) {
-        session.user.id = token.id as string;
-        session.user.role = token.role as string;
-        session.user.companyName = token.companyName as string;
-        session.user.isVerified = token.isVerified as boolean;
+session.user.id = token.id as string;
+        (session.user as any).role = token.role as string;
+        (session.user as any).companyName = token.companyName as string;
+        (session.user as any).isVerified = token.isVerified as boolean;
       }
       return session;
     },

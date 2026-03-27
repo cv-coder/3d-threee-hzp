@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,39 +21,39 @@ export default function LoginPage() {
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+      });
 
-    const { data, error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (signInError) {
-      setError(signInError.message);
-      setLoading(false);
-      return;
-    }
-
-    if (data.user) {
-      // 获取用户资料
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', data.user.id)
-        .single();
-
-      // 根据角色重定向
-      if (profile?.role === 'vendor') {
-        router.push('/dashboard/vendor');
-      } else if (profile?.role === 'buyer') {
-        router.push('/dashboard/buyer');
-      } else {
-        router.push('/');
+      if (result?.error) {
+        setError('登录失败，请检查邮箱和密码');
+        setLoading(false);
+        return;
       }
-      router.refresh();
-    }
 
-    setLoading(false);
+      if (result?.ok) {
+        // 获取用户资料以决定重定向
+        const res = await fetch('/api/auth/session');
+        const session = await res.json();
+        
+        // 根据角色重定向
+        if (session?.user?.role === 'vendor') {
+          router.push('/dashboard/vendor');
+        } else if (session?.user?.role === 'buyer') {
+          router.push('/dashboard/buyer');
+        } else {
+          router.push('/');
+        }
+        router.refresh();
+      }
+    } catch (err) {
+      setError('登录失败，请稍后重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

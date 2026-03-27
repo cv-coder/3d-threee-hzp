@@ -15,10 +15,10 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.535.0",
-    "@aws-sdk/s3-request-presigner": "^3.535.0",
+    "@aws-sdk/s3-request-presigner": "^3.1017.0",
     "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-slider": "^1.1.2",
-    "@radix-ui/react-slot": "^1.0.2",
+    "@radix-ui/react-slot": "^1.2.4",
     "@react-three/drei": "^9.105.4",
     "@react-three/fiber": "^8.16.2",
     "bcryptjs": "^2.4.3",

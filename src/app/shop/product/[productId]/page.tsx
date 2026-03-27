@@ -1,4 +1,5 @@
-import { createClient } from '@/lib/supabase/server';
+import { db } from '@/lib/db';
+import { getPublicUrl } from '@/lib/s3';
 import { notFound } from 'next/navigation';
 import ProductConfigurator from './ProductConfigurator';
 
@@ -8,56 +9,53 @@ interface ProductPageProps {
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { productId } = await params;
-  const supabase = await createClient();
 
-  // 获取产品信息
-  const { data: product } = await supabase
-    .from('products')
-    .select(`
-      *,
-      vendor:profiles!products_vendor_id_fkey(*),
-      model_asset:assets!products_model_asset_id_fkey(*)
-    `)
-    .eq('id', productId)
-    .single();
+  // 获取产品信息（包含商家信息）
+  const product = await db.findOne<any>(
+    `SELECT 
+      p.*,
+      v.id as vendor_id,
+      v.email as vendor_email,
+      v.company_name as vendor_company_name,
+      v.is_verified as vendor_is_verified
+    FROM products p
+    LEFT JOIN profiles v ON p.vendor_id = v.id
+    WHERE p.id = $1 AND p.status = 'published'`,
+    [productId]
+  );
 
-  if (!product || product.status !== 'active') {
+  if (!product) {
     notFound();
   }
 
-  // 增加浏览次数
-  await supabase
-    .from('products')
-    .update({ views_count: (product.views_count || 0) + 1 })
-    .eq('id', productId);
+  // 组装 vendor 对象
+  const productWithVendor = {
+    ...product,
+    vendor: {
+      id: product.vendor_id,
+      email: product.vendor_email,
+      company_name: product.vendor_company_name,
+      is_verified: product.vendor_is_verified,
+    },
+  };
 
-  // 检查用户登录状态
-  const { data: { user } } = await supabase.auth.getUser();
-  let profile = null;
-  if (user) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-    profile = data;
-  }
+  // 异步增加浏览次数（不等待完成）
+  db.update(
+    `UPDATE products SET views_count = views_count + 1 WHERE id = $1`,
+    [productId]
+  ).catch(console.error);
 
-  // 获取模型URL
+  // 获取模型 URL
   let modelUrl = product.model_url;
-  if (product.model_asset && !modelUrl) {
-    const { data: { publicUrl } } = supabase.storage
-      .from('3d-models')
-      .getPublicUrl(product.model_asset.file_path);
-    modelUrl = publicUrl;
+  if (!modelUrl && product.model_asset_id) {
+    // 从 MinIO 获取公开 URL
+    modelUrl = getPublicUrl('3d-models', `${productId}/model.glb`);
   }
 
   return (
     <ProductConfigurator
-      product={product}
+      product={productWithVendor}
       modelUrl={modelUrl}
-      user={user}
-      profile={profile}
     />
   );
 }

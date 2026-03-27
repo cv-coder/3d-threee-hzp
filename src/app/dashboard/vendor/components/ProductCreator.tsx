@@ -1,24 +1,21 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Asset, MaterialConfig } from '@/types/database';
+import type { MaterialConfig } from '@/types/database';
 
 interface ProductCreatorProps {
   vendorId: string;
-  assets: Asset[];
   onSuccess: () => void;
   onCancel: () => void;
 }
 
 export default function ProductCreator({
   vendorId,
-  assets,
   onSuccess,
   onCancel,
 }: ProductCreatorProps) {
@@ -26,7 +23,6 @@ export default function ProductCreator({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    model_asset_id: '',
     price: '',
     moq: '1000',
     tags: '',
@@ -36,8 +32,6 @@ export default function ProductCreator({
     color: '#ffffff',
     roughness: 0.3,
     metalness: 0.1,
-    logoPosition: { x: 0, y: 0, z: 0.1 },
-    logoScale: 0.5,
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -45,22 +39,23 @@ export default function ProductCreator({
     setLoading(true);
 
     try {
-      const supabase = createClient();
-
-      const { error } = await supabase.from('products').insert({
-        vendor_id: vendorId,
-        name: formData.name,
-        description: formData.description,
-        model_asset_id: formData.model_asset_id || null,
-        price: parseFloat(formData.price) || null,
-        moq: parseInt(formData.moq) || 1000,
-        status: 'draft',
-        config_defaults: materialConfig,
-        tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+      const res = await fetch('/api/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          description: formData.description,
+          price: parseFloat(formData.price) || null,
+          moq: parseInt(formData.moq) || 1000,
+          status: 'draft',
+          config_defaults: materialConfig,
+          tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+        }),
       });
 
-      if (error) throw error;
+      if (!res.ok) throw new Error('创建失败');
 
+      alert('产品创建成功！');
       onSuccess();
     } catch (error) {
       console.error('Create product error:', error);
@@ -105,26 +100,9 @@ export default function ProductCreator({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="model">选择3D模型 *</Label>
-              <select
-                id="model"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                value={formData.model_asset_id}
-                onChange={(e) => setFormData({ ...formData, model_asset_id: e.target.value })}
-                required
-              >
-                <option value="">请选择模型</option>
-                {assets.map((asset) => (
-                  <option key={asset.id} value={asset.id}>
-                    {asset.file_name}
-                  </option>
-                ))}
-              </select>
-              {assets.length === 0 && (
-                <p className="text-sm text-red-600">
-                  还没有可用的模型，请先上传3D模型
-                </p>
-              )}
+              <p className="text-sm text-gray-600">
+                上传模型后可在产品编辑中补充或替换模型文件
+              </p>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -238,7 +216,7 @@ export default function ProductCreator({
         <Button type="button" variant="outline" onClick={onCancel}>
           取消
         </Button>
-        <Button type="submit" disabled={loading || assets.length === 0}>
+        <Button type="submit" disabled={loading}>
           {loading ? '创建中...' : '创建产品'}
         </Button>
       </div>

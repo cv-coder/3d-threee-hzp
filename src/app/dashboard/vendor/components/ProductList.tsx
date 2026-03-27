@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate, formatPrice } from '@/lib/utils';
@@ -18,36 +17,44 @@ export default function ProductList({ products, onUpdate }: ProductListProps) {
 
   const toggleProductStatus = async (productId: string, currentStatus: string) => {
     setLoading(productId);
-    const supabase = createClient();
     
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+    const newStatus = currentStatus === 'published' ? 'draft' : 'published';
     
-    const { error } = await supabase
-      .from('products')
-      .update({ status: newStatus })
-      .eq('id', productId);
+    try {
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
 
-    if (!error) {
-      onUpdate();
+      if (res.ok) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Toggle status error:', error);
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   const deleteProduct = async (productId: string) => {
     if (!confirm('确定要删除这个产品吗？')) return;
     
     setLoading(productId);
-    const supabase = createClient();
     
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', productId);
+    try {
+      const res = await fetch(`/api/products/${productId}`, {
+        method: 'DELETE',
+      });
 
-    if (!error) {
-      onUpdate();
+      if (res.ok) {
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Delete product error:', error);
+    } finally {
+      setLoading(null);
     }
-    setLoading(null);
   };
 
   if (products.length === 0) {

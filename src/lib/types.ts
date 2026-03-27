@@ -222,12 +222,3 @@ declare module 'next-auth' {
     isVerified: boolean;
   }
 }
-
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id: string;
-    role: UserRole;
-    companyName?: string;
-    isVerified: boolean;
-  }
-}

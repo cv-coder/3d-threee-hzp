@@ -85,7 +85,7 @@ export default function MaterialControls({ config, onChange, disabled = false }:
           </div>
           <Slider
             value={[localConfig.roughness]}
-            onValueChange={([value]) => handleChange({ roughness: value })}
+            onValueChange={(values: number[]) => handleChange({ roughness: values[0] })}
             min={0}
             max={1}
             step={0.01}
@@ -105,7 +105,7 @@ export default function MaterialControls({ config, onChange, disabled = false }:
           </div>
           <Slider
             value={[localConfig.metalness]}
-            onValueChange={([value]) => handleChange({ metalness: value })}
+            onValueChange={(values: number[]) => handleChange({ metalness: values[0] })}
             min={0}
             max={1}
             step={0.01}

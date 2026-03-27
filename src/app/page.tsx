@@ -1,19 +1,18 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await auth();
 
-  if (user) {
+  if (session?.user) {
     // 获取用户资料并重定向到相应的 Dashboard
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single();
+    const profile = await db.findOne<any>(
+      'SELECT role FROM profiles WHERE id = $1',
+      [session.user.id]
+    );
 
     if (profile?.role === 'vendor') {
       redirect('/dashboard/vendor');

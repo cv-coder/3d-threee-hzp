@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+import { db } from '@/lib/db';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,26 +6,26 @@ import { formatPrice } from '@/lib/utils';
 import { Building2, Package } from 'lucide-react';
 
 export default async function ShopPage() {
-  const supabase = await createClient();
-  
   // 获取所有已认证的商家
-  const { data: vendors } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('role', 'vendor')
-    .eq('is_verified', true)
-    .order('created_at', { ascending: false });
+  const vendors = await db.findMany<any>(
+    `SELECT id, email, company_name, is_verified, created_at 
+     FROM profiles 
+     WHERE role = 'vendor' AND is_verified = true 
+     ORDER BY created_at DESC`
+  );
 
-  // 获取所有上架的产品
-  const { data: products } = await supabase
-    .from('products')
-    .select(`
-      *,
-      vendor:profiles!products_vendor_id_fkey(*)
-    `)
-    .eq('status', 'active')
-    .order('created_at', { ascending: false })
-    .limit(20);
+  // 获取所有上架的产品（包含商家信息）
+  const products = await db.findMany<any>(
+    `SELECT 
+      p.*,
+      v.company_name as vendor_company_name,
+      v.email as vendor_email
+     FROM products p
+     LEFT JOIN profiles v ON p.vendor_id = v.id
+     WHERE p.status = 'published'
+     ORDER BY p.created_at DESC
+     LIMIT 20`
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">

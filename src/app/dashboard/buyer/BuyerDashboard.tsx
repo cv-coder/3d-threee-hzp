@@ -2,13 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, formatPrice } from '@/lib/utils';
 import { LogOut, Inbox, FileText, ShoppingBag, Eye } from 'lucide-react';
-import type { Profile, DesignSession, Inquiry } from '@/types/database';
+import type { Profile } from '@/types/database';
 
 interface BuyerDashboardProps {
   profile: Profile;
@@ -19,8 +19,8 @@ type Tab = 'overview' | 'designs' | 'inquiries';
 export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const [designs, setDesigns] = useState<DesignSession[]>([]);
-  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
+  const [designs, setDesigns] = useState<any[]>([]);
+  const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -28,36 +28,29 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
   }, []);
 
   const loadData = async () => {
-    const supabase = createClient();
-    
-    const [designsRes, inquiriesRes] = await Promise.all([
-      supabase
-        .from('design_sessions')
-        .select(`
-          *,
-          product:products(*)
-        `)
-        .eq('buyer_id', profile.id)
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('inquiries')
-        .select(`
-          *,
-          product:products(*),
-          vendor:profiles!inquiries_vendor_id_fkey(*)
-        `)
-        .eq('buyer_id', profile.id)
-        .order('created_at', { ascending: false }),
-    ]);
-
-    if (designsRes.data) setDesigns(designsRes.data);
-    if (inquiriesRes.data) setInquiries(inquiriesRes.data);
-    setLoading(false);
+    try {
+      // TODO: 创建设计和询价 API
+      // const [designsRes, inquiriesRes] = await Promise.all([
+      //   fetch('/api/design'),
+      //   fetch('/api/inquiries'),
+      // ]);
+      // if (designsRes.ok) {
+      //   const data = await designsRes.json();
+      //   setDesigns(data.designs);
+      // }
+      // if (inquiriesRes.ok) {
+      //   const data = await inquiriesRes.json();
+      //   setInquiries(data.inquiries);
+      // }
+    } catch (error) {
+      console.error('Load data error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleLogout = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
+    await signOut({ redirect: false });
     router.push('/');
     router.refresh();
   };

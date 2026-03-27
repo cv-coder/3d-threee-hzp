@@ -35,47 +35,47 @@ export const db = {
   /**
    * 查询单条记录
    */
-  async findOne<T>(query: TemplateStringsArray, ...params: any[]): Promise<T | null> {
-    const result = await sql<T[]>(query, ...params);
+  async findOne<T = any>(query: string, params: any[] = []): Promise<T | null> {
+    const result = await sql.unsafe<T[]>(query, params);
     return result[0] || null;
   },
 
   /**
    * 查询多条记录
    */
-  async findMany<T>(query: TemplateStringsArray, ...params: any[]): Promise<T[]> {
-    return await sql<T[]>(query, ...params);
+  async findMany<T = any>(query: string, params: any[] = []): Promise<T[]> {
+    return await sql.unsafe<T[]>(query, params);
   },
 
   /**
    * 插入记录并返回
    */
-  async insert<T>(query: TemplateStringsArray, ...params: any[]): Promise<T> {
-    const result = await sql<T[]>(query, ...params);
+  async insert<T = any>(query: string, params: any[] = []): Promise<T> {
+    const result = await sql.unsafe<T[]>(query, params);
     return result[0];
   },
 
   /**
    * 更新记录并返回
    */
-  async update<T>(query: TemplateStringsArray, ...params: any[]): Promise<T | null> {
-    const result = await sql<T[]>(query, ...params);
+  async update<T = any>(query: string, params: any[] = []): Promise<T | null> {
+    const result = await sql.unsafe<T[]>(query, params);
     return result[0] || null;
   },
 
   /**
    * 删除记录
    */
-  async delete(query: TemplateStringsArray, ...params: any[]): Promise<number> {
-    const result = await sql(query, ...params);
+  async delete(query: string, params: any[] = []): Promise<number> {
+    const result = await sql.unsafe(query, params);
     return result.count;
   },
 
   /**
    * 执行事务
    */
-  async transaction<T>(callback: (sql: typeof postgres) => Promise<T>): Promise<T> {
-    return await sql.begin(callback);
+  async transaction<T>(callback: (tx: any) => Promise<T>): Promise<T> {
+    return (await sql.begin(callback as any)) as T;
   },
 };
 

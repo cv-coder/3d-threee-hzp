@@ -1,20 +1,19 @@
 import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
+import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
 import BuyerDashboard from './BuyerDashboard';
 
 export default async function BuyerPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const session = await auth();
 
-  if (!user) {
+  if (!session?.user) {
     redirect('/login');
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', user.id)
-    .single();
+  const profile = await db.findOne<any>(
+    'SELECT * FROM profiles WHERE id = $1',
+    [session.user.id]
+  );
 
   if (profile?.role !== 'buyer') {
     redirect('/');

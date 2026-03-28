@@ -1,20 +1,20 @@
 # ================================================
-# 3D Packaging SaaS - 自托管架构迁移指南
+# 3D Packaging SaaS - 自托管部署指南
 # ================================================
 
 ## 📋 概述
 
-本项目已从 Supabase 托管架构迁移到完全自托管架构，实现了数据的完全控制权。
+本项目采用完全自托管架构，核心能力由 PostgreSQL、MinIO、NextAuth.js 和 Next.js API Routes 提供。
 
-## 🏗️ 架构变更对比
+## 🏗️ 当前架构
 
-| 组件 | Supabase 架构 | 自托管架构 |
-|------|-------------|----------|
-| 数据库 | Supabase PostgreSQL | 自托管 PostgreSQL 16 |
-| 对象存储 | Supabase Storage | MinIO (S3 兼容) |
-| 认证系统 | Supabase Auth | NextAuth.js v5 |
-| 权限控制 | Row Level Security | API 层权限校验 |
-| 部署方式 | 云托管 | Docker Compose |
+| 组件 | 实现 |
+|------|------|
+| 数据库 | PostgreSQL 16 |
+| 对象存储 | MinIO (S3 兼容) |
+| 认证系统 | NextAuth.js v5 |
+| 权限控制 | API 层权限校验 |
+| 部署方式 | Docker Compose |
 
 ## 🚀 快速启动
 

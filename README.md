@@ -167,7 +167,6 @@ npm run start            # 启动生产服务器
 ## 📚 文档
 
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - 详细部署指南和API文档
-- **[MIGRATION.md](./MIGRATION.md)** - Supabase 迁移说明
 - **[process.md](./process.md)** - 开发进度文档
 
 ## 🔐 安全建议

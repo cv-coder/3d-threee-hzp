@@ -1,6 +1,6 @@
 -- ================================================
 -- 3D Packaging SaaS - PostgreSQL Schema
--- Self-Hosted Architecture (No Supabase)
+-- Self-Hosted Architecture
 -- ================================================
 
 -- 创建必要的扩展

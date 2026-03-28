@@ -18,6 +18,8 @@ export default async function Home() {
       redirect('/dashboard/vendor');
     } else if (profile?.role === 'buyer') {
       redirect('/dashboard/buyer');
+    } else if (profile?.role === 'admin') {
+      redirect('/dashboard/admin');
     }
   }
 

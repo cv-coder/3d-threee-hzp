@@ -42,12 +42,13 @@ CREATE TABLE products (
     vendor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    model_url TEXT NOT NULL,  -- MinIO 中的 3D 模型路径
+    model_url TEXT,            -- MinIO 中的 3D 模型路径（可后续上传）
     thumbnail_url TEXT,
     price DECIMAL(10, 2),
     moq INTEGER DEFAULT 1000,  -- 最小起订量
     status product_status DEFAULT 'draft',
     tags TEXT[],
+    material_config JSONB,     -- 默认材质配置
     views_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),

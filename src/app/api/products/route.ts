@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth, withErrorHandler, validateRequest, isValidFileType, isValidFileSize } from '@/lib/api-middleware';
+import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { sql } from '@/lib/db';
-import { upload3DModel, uploadThumbnail } from '@/lib/s3';
-import type { ApiResponse, Product, ProductFormData } from '@/lib/types';
+import type { ApiResponse, Product } from '@/lib/types';
 
 /**
  * GET /api/products
@@ -84,120 +83,43 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
 /**
  * POST /api/products
- * 上传新产品（仅商家）
+ * 创建新产品（仅商家）—— 接收 JSON，文件上传通过独立接口完成
  */
 export const POST = withAuth(
   async (req: NextRequest, session) => {
     try {
-      const formData = await req.formData();
-      
-      // 提取字段
-      const name = formData.get('name') as string;
-      const description = formData.get('description') as string;
-      const price = formData.get('price') as string;
-      const moq = formData.get('moq') as string;
-      const tags = formData.get('tags') as string;
-      const materialConfig = formData.get('materialConfig') as string;
-      
-      const modelFile = formData.get('model') as File;
-      const thumbnailFile = formData.get('thumbnail') as File;
+      const body = await req.json();
+      const { name, description, price, moq, tags, config_defaults, status } = body;
 
-      // 验证必填字段
-      if (!name || !modelFile) {
+      if (!name) {
         return NextResponse.json<ApiResponse>(
-          { success: false, error: 'Missing required fields: name, model' },
+          { success: false, error: 'Missing required field: name' },
           { status: 400 }
         );
       }
 
-      // 验证文件类型和大小
-      const allowedModelExts = process.env.ALLOWED_MODEL_EXTENSIONS?.split(',') || ['.glb', '.gltf'];
-      if (!isValidFileType(modelFile.name, allowedModelExts)) {
-        return NextResponse.json<ApiResponse>(
-          { success: false, error: 'Invalid model file type' },
-          { status: 400 }
-        );
-      }
-
-      const maxSizeMB = parseInt(process.env.MAX_FILE_SIZE_MB || '50');
-      if (!isValidFileSize(modelFile.size, maxSizeMB)) {
-        return NextResponse.json<ApiResponse>(
-          { success: false, error: `Model file too large (max ${maxSizeMB}MB)` },
-          { status: 400 }
-        );
-      }
-
-      // 上传 3D 模型
-      const modelBuffer = Buffer.from(await modelFile.arrayBuffer());
-      const modelUrl = await upload3DModel(
-        session.user.id,
-        modelFile.name,
-        modelBuffer
-      );
-
-      // 上传缩略图（如果有）
-      let thumbnailUrl: string | null = null;
-      if (thumbnailFile) {
-        const thumbnailBuffer = Buffer.from(await thumbnailFile.arrayBuffer());
-        thumbnailUrl = await uploadThumbnail(
-          session.user.id,
-          thumbnailFile.name,
-          thumbnailBuffer
-        );
-      }
-
-      // 解析材质配置
-      let parsedConfig = null;
-      if (materialConfig) {
-        try {
-          parsedConfig = JSON.parse(materialConfig);
-        } catch (e) {
-          // 忽略解析错误，使用默认配置
-        }
-      }
-
-      // 插入产品记录
       const [product] = await sql<Product[]>`
         INSERT INTO products (
           vendor_id,
           name,
           description,
-          model_url,
-          thumbnail_url,
           price,
           moq,
           tags,
+          material_config,
           status
         ) VALUES (
           ${session.user.id},
           ${name},
           ${description || null},
-          ${modelUrl},
-          ${thumbnailUrl},
-          ${price ? parseFloat(price) : null},
-          ${moq ? parseInt(moq) : 1000},
-          ${tags ? tags.split(',').map(t => t.trim()) : []},
-          'draft'
+          ${price ?? null},
+          ${moq ?? 1000},
+          ${tags ?? []},
+          ${config_defaults ? JSON.stringify(config_defaults) : null},
+          ${status ?? 'draft'}
         )
         RETURNING *
       `;
-
-      // 如果有材质配置，创建默认预设
-      if (parsedConfig) {
-        await sql`
-          INSERT INTO material_presets (
-            product_id,
-            name,
-            config,
-            is_default
-          ) VALUES (
-            ${product.id},
-            'Default',
-            ${JSON.stringify(parsedConfig)},
-            true
-          )
-        `;
-      }
 
       return NextResponse.json<ApiResponse>(
         { success: true, data: product, message: 'Product created successfully' },

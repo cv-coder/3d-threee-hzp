@@ -85,8 +85,8 @@ export async function closeConnection() {
   console.log('Database connection closed');
 }
 
-// 进程退出时关闭连接
-if (process.env.NODE_ENV !== 'test') {
+// 进程退出时关闭连接（仅 Node.js 运行时，Edge Runtime 不支持 process.on）
+if (process.env.NODE_ENV !== 'test' && typeof process !== 'undefined' && typeof process.on === 'function') {
   process.on('SIGTERM', closeConnection);
   process.on('SIGINT', closeConnection);
 }

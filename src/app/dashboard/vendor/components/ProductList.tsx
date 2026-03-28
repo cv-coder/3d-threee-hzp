@@ -10,9 +10,10 @@ import type { Product } from '@/types/database';
 interface ProductListProps {
   products: Product[];
   onUpdate: () => void;
+  onEdit: (product: Product) => void;
 }
 
-export default function ProductList({ products, onUpdate }: ProductListProps) {
+export default function ProductList({ products, onUpdate, onEdit }: ProductListProps) {
   const [loading, setLoading] = useState<string | null>(null);
 
   const toggleProductStatus = async (productId: string, currentStatus: string) => {
@@ -98,14 +99,14 @@ export default function ProductList({ products, onUpdate }: ProductListProps) {
                   <div className="flex items-center gap-2 shrink-0">
                     <span
                       className={`px-3 py-1 text-sm rounded-full ${
-                        product.status === 'active'
+                        product.status === 'published'
                           ? 'bg-green-100 text-green-700'
                           : product.status === 'draft'
                           ? 'bg-gray-100 text-gray-700'
                           : 'bg-red-100 text-red-700'
                       }`}
                     >
-                      {product.status === 'active'
+                      {product.status === 'published'
                         ? '上架中'
                         : product.status === 'draft'
                         ? '草稿'
@@ -142,7 +143,7 @@ export default function ProductList({ products, onUpdate }: ProductListProps) {
                     onClick={() => toggleProductStatus(product.id, product.status)}
                     disabled={loading === product.id}
                   >
-                    {product.status === 'active' ? (
+                    {product.status === 'published' ? (
                       <>
                         <ToggleRight className="h-4 w-4 mr-1" />
                         下架
@@ -165,7 +166,7 @@ export default function ProductList({ products, onUpdate }: ProductListProps) {
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled
+                    onClick={() => onEdit(product)}
                   >
                     <Edit className="h-4 w-4 mr-1" />
                     编辑

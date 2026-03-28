@@ -5,7 +5,7 @@ import type { ApiResponse } from '@/lib/types';
 /**
  * API 权限校验中间件
  */
-export async function withAuth(
+export function withAuth(
   handler: (req: NextRequest, session: any) => Promise<NextResponse>,
   options?: {
     requiredRoles?: string[];

@@ -1,5 +1,5 @@
 export type UserRole = 'vendor' | 'buyer' | 'admin';
-export type ProductStatus = 'draft' | 'active' | 'inactive' | 'archived';
+export type ProductStatus = 'draft' | 'published' | 'archived';
 export type AssetStatus = 'uploading' | 'processing' | 'ready' | 'failed';
 export type DesignStatus = 'draft' | 'saved' | 'submitted';
 export type InquiryStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'closed';

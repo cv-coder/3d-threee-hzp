@@ -10,18 +10,20 @@ import type { Profile, Product } from '@/types/database';
 import ModelUpload from './components/ModelUpload';
 import ProductList from './components/ProductList';
 import ProductCreator from './components/ProductCreator';
+import ProductEditor from './components/product-editor';
 
 interface VendorDashboardProps {
   profile: Profile;
 }
 
-type Tab = 'overview' | 'products' | 'upload' | 'create-product';
+type Tab = 'overview' | 'products' | 'upload' | 'create-product' | 'edit-product';
 
 export default function VendorDashboard({ profile }: VendorDashboardProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('overview');
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
     loadData();
@@ -33,7 +35,7 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
       const res = await fetch('/api/products');
       if (res.ok) {
         const data = await res.json();
-        setProducts(data.products || []);
+        setProducts(data?.data?.products || []);
       }
     } catch (error) {
       console.error('Load data error:', error);
@@ -125,7 +127,7 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                   <Card>
                     <CardHeader>
                       <CardTitle className="text-2xl">
-                        {products.filter((p) => p.status === 'active').length}
+                        {products.filter((p) => p.status === 'published').length}
                       </CardTitle>
                       <CardDescription>上架中</CardDescription>
                     </CardHeader>
@@ -212,7 +214,14 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                     创建新产品
                   </Button>
                 </div>
-                <ProductList products={products} onUpdate={loadData} />
+                <ProductList
+                  products={products}
+                  onUpdate={loadData}
+                  onEdit={(product) => {
+                    setEditingProduct(product);
+                    setActiveTab('edit-product');
+                  }}
+                />
               </div>
             )}
 
@@ -224,6 +233,21 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                   setActiveTab('products');
                 }}
                 onCancel={() => setActiveTab('products')}
+              />
+            )}
+
+            {activeTab === 'edit-product' && editingProduct && (
+              <ProductEditor
+                product={editingProduct}
+                onSuccess={() => {
+                  loadData();
+                  setEditingProduct(null);
+                  setActiveTab('products');
+                }}
+                onCancel={() => {
+                  setEditingProduct(null);
+                  setActiveTab('products');
+                }}
               />
             )}
           </main>

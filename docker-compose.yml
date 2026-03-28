@@ -137,7 +137,7 @@ services:
       else
         MINIO_SCHEME='http';
       fi;
-      MINIO_TARGET=\"$${MINIO_SCHEME}://${MINIO_ENDPOINT:-minio}:${MINIO_PORT:-9000}\";
+      MINIO_TARGET=\"$${MINIO_SCHEME}://${MINIO_ENDPOINT:-host.docker.internal}:${MINIO_PORT:-9000}\";
       MINIO_USER=\"$${MINIO_ROOT_USER:-$${MINIO_ACCESS_KEY:-minioadmin}}\";
       MINIO_PASS=\"$${MINIO_ROOT_PASSWORD:-$${MINIO_SECRET_KEY:-minioadmin}}\";
 

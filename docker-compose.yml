@@ -11,10 +11,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      minio:
-        condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
     environment:
       NODE_ENV: production
       NEXTAUTH_URL: ${NEXTAUTH_URL}
@@ -25,9 +21,9 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-packaging_saas}
-      MINIO_ENDPOINT: minio
-      MINIO_PORT: 9000
-      MINIO_CONSOLE_PORT: 9001
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+      MINIO_PORT: ${MINIO_PORT:-9000}
+      MINIO_CONSOLE_PORT: ${MINIO_CONSOLE_PORT:-9001}
       MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
@@ -38,13 +34,15 @@ services:
       MINIO_BUCKET_THUMBNAILS: ${MINIO_BUCKET_THUMBNAILS:-thumbnails}
       MINIO_BUCKET_LOGOS: ${MINIO_BUCKET_LOGOS:-logos}
       MINIO_BUCKET_SNAPSHOTS: ${MINIO_BUCKET_SNAPSHOTS:-snapshots}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       NEXT_TELEMETRY_DISABLED: 1
     ports:
       - "${APP_PORT:-3000}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - packaging-network
 
@@ -74,6 +72,8 @@ services:
   minio:
     image: minio/minio:latest
     container_name: 3d-packaging-minio
+    profiles:
+      - with-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
     environment:
@@ -96,6 +96,8 @@ services:
   minio-init:
     image: minio/mc:latest
     container_name: 3d-packaging-minio-init
+    profiles:
+      - with-minio
     depends_on:
       minio:
         condition: service_healthy
@@ -121,10 +123,47 @@ services:
     networks:
       - packaging-network
 
+  # 外部 MinIO 初始化服务 (用于已存在的 MinIO 实例)
+  minio-bootstrap:
+    image: minio/mc:latest
+    container_name: 3d-packaging-minio-bootstrap
+    profiles:
+      - init-external-minio
+    entrypoint: >
+      /bin/sh -c "
+      echo 'Initializing external MinIO buckets...';
+      if [ \"${MINIO_USE_SSL:-false}\" = \"true\" ]; then
+        MINIO_SCHEME='https';
+      else
+        MINIO_SCHEME='http';
+      fi;
+      MINIO_TARGET=\"$${MINIO_SCHEME}://${MINIO_ENDPOINT:-minio}:${MINIO_PORT:-9000}\";
+      MINIO_USER=\"$${MINIO_ROOT_USER:-$${MINIO_ACCESS_KEY:-minioadmin}}\";
+      MINIO_PASS=\"$${MINIO_ROOT_PASSWORD:-$${MINIO_SECRET_KEY:-minioadmin}}\";
+
+      /usr/bin/mc alias set target \"$${MINIO_TARGET}\" \"$${MINIO_USER}\" \"$${MINIO_PASS}\";
+
+      /usr/bin/mc mb target/${MINIO_BUCKET_3D_MODELS:-3d-models} --ignore-existing;
+      /usr/bin/mc mb target/${MINIO_BUCKET_THUMBNAILS:-thumbnails} --ignore-existing;
+      /usr/bin/mc mb target/${MINIO_BUCKET_LOGOS:-logos} --ignore-existing;
+      /usr/bin/mc mb target/${MINIO_BUCKET_SNAPSHOTS:-snapshots} --ignore-existing;
+
+      /usr/bin/mc anonymous set download target/${MINIO_BUCKET_3D_MODELS:-3d-models};
+      /usr/bin/mc anonymous set download target/${MINIO_BUCKET_THUMBNAILS:-thumbnails};
+
+      echo 'External MinIO buckets initialized successfully.';
+      "
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - packaging-network
+
   # Redis (可选 - 用于会话缓存和队列)
   redis:
     image: redis:7-alpine
     container_name: 3d-packaging-redis
+    profiles:
+      - with-redis
     restart: unless-stopped
     ports:
       - "${REDIS_PORT:-6379}:6379"

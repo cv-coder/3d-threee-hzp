@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import MaterialControls from '@/components/3d/MaterialControls';
 import { formatPrice } from '@/lib/utils';
-import { ArrowLeft, Save, Send, Building2 } from 'lucide-react';
+import { ArrowLeft, Save, Send, Building2, LogOut, User } from 'lucide-react';
 import type { Product, Profile, MaterialConfig } from '@/types/database';
 
 // 动态导入3D组件（避免SSR问题）
@@ -141,7 +141,30 @@ export default function ProductConfigurator({
               3D包材选型系统
             </h1>
           </Link>
-          <div className="w-24" /> {/* Spacer for centering */}
+          <div className="flex items-center gap-2">
+            {status === 'authenticated' && user ? (
+              <>
+                <div className="flex items-center gap-1 text-sm text-gray-600">
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">{user.email}</span>
+                  <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                    {user.role === 'vendor' ? '厂家' : user.role === 'admin' ? '管理员' : '买家'}
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => signOut({ callbackUrl: '/shop' })}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm">登录</Button>
+              </Link>
+            )}
+          </div>
         </div>
       </header>
 
@@ -238,7 +261,7 @@ export default function ProductConfigurator({
                 <Button
                   className="w-full"
                   onClick={handleSaveDesign}
-                  disabled={saving || !user}
+                  disabled={saving || status !== 'authenticated' || !user}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {saving ? '保存中...' : '保存设计方案'}
@@ -248,19 +271,19 @@ export default function ProductConfigurator({
                   className="w-full"
                   variant="default"
                   onClick={() => setShowInquiryForm(true)}
-                  disabled={!user || user.role !== 'buyer'}
+                  disabled={status !== 'authenticated' || !user || user.role !== 'buyer'}
                 >
                   <Send className="h-4 w-4 mr-2" />
                   发起询价
                 </Button>
 
-                {!user && (
+                {(status === 'unauthenticated' || (status !== 'loading' && !user)) && (
                   <p className="text-xs text-center text-gray-500">
                     登录后可保存方案和发起询价
                   </p>
                 )}
                 
-                {user && user.role === 'vendor' && (
+                {status === 'authenticated' && user?.role === 'vendor' && (
                   <p className="text-xs text-center text-red-500">
                     厂家账号不能发起询价
                   </p>

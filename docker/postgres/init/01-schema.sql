@@ -61,6 +61,23 @@ CREATE INDEX idx_products_vendor ON products(vendor_id);
 CREATE INDEX idx_products_status ON products(status);
 CREATE INDEX idx_products_tags ON products USING GIN(tags);
 
+-- 模型资产表（厂家上传的 3D 模型）
+CREATE TABLE model_assets (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    vendor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    file_path TEXT NOT NULL,        -- MinIO 中的路径
+    file_size BIGINT,               -- 文件大小（字节）
+    original_filename VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'ready',  -- uploading / ready / failed
+    preview_url TEXT,               -- 缩略图 URL
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_model_assets_vendor ON model_assets(vendor_id);
+CREATE INDEX idx_model_assets_created ON model_assets(created_at);
+
 -- 材质预设表
 CREATE TABLE material_presets (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

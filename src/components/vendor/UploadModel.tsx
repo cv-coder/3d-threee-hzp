@@ -119,6 +119,27 @@ export default function UploadModel({ onSuccess }: UploadModelProps) {
       const result = await response.json();
 
       if (result.success) {
+        // 上传产品成功后，保存模型资产
+        try {
+          const modelAssetRes = await fetch('/api/models', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              name: formData.name,
+              filePath: result.data.model_url,
+              fileSize: files.model.size,
+              originalFilename: files.model.name,
+              previewUrl: files.thumbnail ? result.data.thumbnail_url : null,
+            }),
+          });
+
+          if (!modelAssetRes.ok) {
+            console.warn('Model asset save failed, but product was created');
+          }
+        } catch (error) {
+          console.warn('Model asset save error:', error);
+        }
+
         setStatus('success');
         setMessage('产品上传成功！');
         

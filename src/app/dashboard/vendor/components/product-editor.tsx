@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import ModelSelector from '@/components/vendor/ModelSelector';
 import type { MaterialConfig, Product } from '@/types/database';
 
 interface ProductEditorProps {
@@ -22,6 +23,7 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
     price: product.price?.toString() || '',
     moq: product.moq?.toString() || '1000',
     tags: (product.tags || []).join(','),
+    model_url: product.model_url || '',
   });
 
   const initialMaterialConfig = useMemo<MaterialConfig>(() => {
@@ -49,6 +51,7 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
           price: formData.price ? parseFloat(formData.price) : null,
           moq: parseInt(formData.moq) || 1000,
           tags: formData.tags ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
+          model_url: formData.model_url || null,
           material_config: materialConfig,
         }),
       });
@@ -135,6 +138,12 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
                 placeholder="例如：透明,500ml,PET"
               />
             </div>
+
+            <ModelSelector
+              value={formData.model_url}
+              onChange={(url) => setFormData({ ...formData, model_url: url })}
+              disabled={loading}
+            />
           </div>
 
           <div className="space-y-4 pt-6 border-t">

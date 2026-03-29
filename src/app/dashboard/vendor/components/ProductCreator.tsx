@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import ModelSelector from '@/components/vendor/ModelSelector';
 import type { MaterialConfig } from '@/types/database';
 
 interface ProductCreatorProps {
@@ -26,6 +27,7 @@ export default function ProductCreator({
     price: '',
     moq: '1000',
     tags: '',
+    model_url: '',
   });
 
   const [materialConfig, setMaterialConfig] = useState<MaterialConfig>({
@@ -50,6 +52,7 @@ export default function ProductCreator({
           status: 'draft',
           config_defaults: materialConfig,
           tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+          model_url: formData.model_url || null,
         }),
       });
 
@@ -139,6 +142,12 @@ export default function ProductCreator({
                 placeholder="例如：透明,500ml,PET"
               />
             </div>
+
+            <ModelSelector
+              value={formData.model_url}
+              onChange={(url) => setFormData({ ...formData, model_url: url })}
+              disabled={loading}
+            />
           </div>
 
           {/* 默认材质配置 */}

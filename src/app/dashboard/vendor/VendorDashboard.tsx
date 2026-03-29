@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Upload, FileBox, LogOut, Settings } from 'lucide-react';
+import { Package, Upload, FileBox, LogOut, Boxes } from 'lucide-react';
 import type { Profile, Product } from '@/types/database';
-import ModelUpload from './components/ModelUpload';
+import MyModels from './components/MyModels';
 import ProductList from './components/ProductList';
 import ProductCreator from './components/ProductCreator';
 import ProductEditor from './components/product-editor';
@@ -16,7 +16,7 @@ interface VendorDashboardProps {
   profile: Profile;
 }
 
-type Tab = 'overview' | 'products' | 'upload' | 'create-product' | 'edit-product';
+type Tab = 'overview' | 'products' | 'models' | 'create-product' | 'edit-product';
 
 export default function VendorDashboard({ profile }: VendorDashboardProps) {
   const router = useRouter();
@@ -100,15 +100,15 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                 <span>产品管理</span>
               </button>
               <button
-                onClick={() => setActiveTab('upload')}
+                onClick={() => setActiveTab('models')}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'upload'
+                  activeTab === 'models'
                     ? 'bg-blue-50 text-blue-700'
                     : 'hover:bg-gray-100'
                 }`}
               >
-                <Upload className="h-5 w-5" />
-                <span>上传模型</span>
+                <Boxes className="h-5 w-5" />
+                <span>我的模型</span>
               </button>
             </nav>
           </aside>
@@ -160,7 +160,7 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                         <Button
                           size="sm"
                           className="mt-2"
-                          onClick={() => setActiveTab('upload')}
+                          onClick={() => setActiveTab('models')}
                         >
                           立即上传
                         </Button>
@@ -202,8 +202,8 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
               </div>
             )}
 
-            {activeTab === 'upload' && (
-              <ModelUpload vendorId={profile.id} onUploadComplete={loadData} />
+            {activeTab === 'models' && (
+              <MyModels vendorId={profile.id} />
             )}
 
             {activeTab === 'products' && (

@@ -31,8 +31,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 验证角色
-    if (!['buyer', 'vendor', 'admin'].includes(role)) {
+    // 验证角色（admin 仅允许通过 bootstrap 接口创建）
+    if (!['buyer', 'vendor'].includes(role)) {
       return NextResponse.json(
         { error: '无效的角色' },
         { status: 400 }
@@ -48,9 +48,23 @@ export async function POST(req: NextRequest) {
     });
 
     if (!result.success) {
+      if (result.errorCode === 'EMAIL_EXISTS') {
+        return NextResponse.json(
+          { error: '该邮箱已被注册' },
+          { status: 409 }
+        );
+      }
+
+      if (result.errorCode === 'ECONNRESET') {
+        return NextResponse.json(
+          { error: '数据库连接被重置，请检查数据库服务与网络连通性' },
+          { status: 503 }
+        );
+      }
+
       return NextResponse.json(
-        { error: result.error || '注册失败' },
-        { status: 400 }
+        { error: result.error || '注册失败，请稍后重试' },
+        { status: 500 }
       );
     }
 
@@ -69,6 +83,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: '该邮箱已被注册' },
         { status: 409 }
+      );
+    }
+
+    if (error.code === 'ECONNRESET') {
+      return NextResponse.json(
+        { error: '数据库连接被重置，请检查数据库服务与网络连通性' },
+        { status: 503 }
       );
     }
 

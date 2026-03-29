@@ -103,9 +103,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
 export async function registerUser(data: {
   email: string;
   password: string;
-  role: 'vendor' | 'buyer';
+  role: 'vendor' | 'buyer' | 'admin';
   companyName?: string;
-}): Promise<{ success: boolean; userId?: string; error?: string }> {
+}): Promise<{ success: boolean; userId?: string; error?: string; errorCode?: string }> {
   try {
     // 检查邮箱是否已存在
     const [existingUser] = await sql`
@@ -113,7 +113,7 @@ export async function registerUser(data: {
     `;
 
     if (existingUser) {
-      return { success: false, error: 'Email already exists' };
+      return { success: false, error: 'Email already exists', errorCode: 'EMAIL_EXISTS' };
     }
 
     // 密码加密
@@ -139,7 +139,12 @@ export async function registerUser(data: {
     return { success: true, userId: newUser.id };
   } catch (error) {
     console.error('Register error:', error);
-    return { success: false, error: 'Registration failed' };
+    const err = error as any;
+    return {
+      success: false,
+      error: err?.message || 'Registration failed',
+      errorCode: err?.code || 'REGISTRATION_FAILED',
+    };
   }
 }
 

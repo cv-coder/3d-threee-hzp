@@ -12,7 +12,7 @@ function getProductIdFromPath(pathname: string): string | null {
 
 /**
  * PATCH /api/products/:id
- * 更新产品状态（仅产品所属商家或管理员）
+ * 更新产品状态（仅产品所属厂家或管理员）
  */
 export const PATCH = withAuth(
   async (req: NextRequest, session) => {
@@ -149,7 +149,7 @@ export const PATCH = withAuth(
 
 /**
  * DELETE /api/products/:id
- * 删除产品（仅产品所属商家或管理员）
+ * 删除产品（仅产品所属厂家或管理员）
  */
 export const DELETE = withAuth(
   async (req: NextRequest, session) => {

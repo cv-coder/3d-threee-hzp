@@ -93,7 +93,7 @@ export const GET = withAuth(async (req: NextRequest, session) => {
     let inquiries: Inquiry[];
 
     if (session.user.role === 'vendor') {
-      // 商家：查看收到的询价
+      // 厂家：查看收到的询价
       inquiries = await sql<Inquiry[]>`
         SELECT i.*,
                p.name as product_name,

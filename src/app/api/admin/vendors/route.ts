@@ -5,7 +5,7 @@ import type { ApiResponse } from '@/lib/types';
 
 /**
  * GET /api/admin/vendors
- * 管理员获取商家列表（含认证状态）
+ * 管理员获取厂家列表（含认证状态）
  */
 export const GET = withAuth(
   async (_req: NextRequest) => {

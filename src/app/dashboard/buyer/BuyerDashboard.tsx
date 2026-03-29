@@ -297,7 +297,7 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                                 {inquiry.product?.name}
                               </h4>
                               <p className="text-sm text-gray-600">
-                                商家: {inquiry.vendor?.company_name || '未知'}
+                                厂家: {inquiry.vendor?.company_name || '未知'}
                               </p>
                             </div>
                             {getStatusBadge(inquiry.status)}
@@ -343,7 +343,7 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                           {inquiry.vendor_notes && (
                             <div className="p-3 bg-blue-50 rounded-lg">
                               <p className="text-sm text-blue-900">
-                                <span className="font-semibold">商家回复:</span>{' '}
+                                <span className="font-semibold">厂家回复:</span>{' '}
                                 {inquiry.vendor_notes}
                               </p>
                             </div>

@@ -24,7 +24,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
     let total: number;
 
     if (session?.user?.role === 'vendor') {
-      // 商家：返回自己的所有产品
+      // 厂家：返回自己的所有产品
       products = await sql<Product[]>`
         SELECT * FROM products
         WHERE vendor_id = ${session.user.id}
@@ -83,7 +83,7 @@ export const GET = withErrorHandler(async (req: NextRequest) => {
 
 /**
  * POST /api/products
- * 创建新产品（仅商家）—— 接收 JSON，文件上传通过独立接口完成
+ * 创建新产品（仅厂家）—— 接收 JSON，文件上传通过独立接口完成
  */
 export const POST = withAuth(
   async (req: NextRequest, session) => {

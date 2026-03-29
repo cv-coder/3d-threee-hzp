@@ -12,7 +12,7 @@ function getVendorIdFromPath(pathname: string): string | null {
 
 /**
  * PATCH /api/admin/vendors/:vendorId/verify
- * 管理员认证/取消认证商家
+ * 管理员认证/取消认证厂家
  */
 export const PATCH = withAuth(
   async (req: NextRequest) => {

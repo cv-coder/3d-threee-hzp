@@ -10,7 +10,7 @@ interface ProductPageProps {
 export default async function ProductPage({ params }: ProductPageProps) {
   const { productId } = await params;
 
-  // 获取产品信息（包含商家信息）
+  // 获取产品信息（包含厂家信息）
   const product = await db.findOne<any>(
     `SELECT 
       p.*,

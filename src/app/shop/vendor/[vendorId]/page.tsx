@@ -13,7 +13,7 @@ interface VendorShopPageProps {
 export default async function VendorShopPage({ params }: VendorShopPageProps) {
   const { vendorId } = await params;
 
-  // 获取商家信息
+  // 获取厂家信息
   const vendor = await db.findOne<any>(
     `SELECT id, email, company_name, is_verified, created_at
      FROM profiles
@@ -25,7 +25,7 @@ export default async function VendorShopPage({ params }: VendorShopPageProps) {
     notFound();
   }
 
-  // 获取该商家的所有上架产品
+  // 获取该厂家的所有上架产品
   const products = await db.findMany<any>(
     `SELECT *
      FROM products
@@ -62,7 +62,7 @@ export default async function VendorShopPage({ params }: VendorShopPageProps) {
           返回商城
         </Link>
 
-        {/* 商家信息卡片 */}
+        {/* 厂家信息卡片 */}
         <Card className="mb-8">
           <CardContent className="py-6">
             <div className="flex items-center gap-4">
@@ -72,7 +72,7 @@ export default async function VendorShopPage({ params }: VendorShopPageProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <h2 className="text-2xl font-bold truncate">
-                    {vendor.company_name || '未命名商家'}
+                    {vendor.company_name || '未命名厂家'}
                   </h2>
                   {vendor.is_verified && (
                     <span className="inline-flex items-center gap-1 text-sm text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
@@ -144,7 +144,7 @@ export default async function VendorShopPage({ params }: VendorShopPageProps) {
         {(!products || products.length === 0) && (
           <Card>
             <CardContent className="py-12 text-center text-gray-500">
-              该商家暂无上架产品
+              该厂家暂无上架产品
             </CardContent>
           </Card>
         )}

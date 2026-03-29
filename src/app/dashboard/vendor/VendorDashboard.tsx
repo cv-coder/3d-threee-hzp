@@ -56,7 +56,7 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">商家后台</h1>
+            <h1 className="text-2xl font-bold text-gray-900">厂家后台</h1>
             <p className="text-sm text-gray-600">{profile.company_name || profile.email}</p>
           </div>
           <div className="flex items-center gap-4">

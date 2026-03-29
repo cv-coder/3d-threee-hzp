@@ -165,7 +165,7 @@ NEXTAUTH_SECRET=your_random_secret_key
 - 权限：公开（买家/公开用户只能看到已发布产品）
 
 **POST /api/products**
-- 权限：仅商家
+- 权限：仅厂家
 - 请求类型：`multipart/form-data`
 - 字段：
   - `name` (必填): 产品名称
@@ -207,9 +207,9 @@ NEXTAUTH_SECRET=your_random_secret_key
   ```
 
 **GET /api/inquiries**
-- 权限：买家/商家
+- 权限：买家/厂家
 - 买家：查看自己发起的询价
-- 商家：查看收到的询价
+- 厂家：查看收到的询价
 
 ## 🧪 测试
 

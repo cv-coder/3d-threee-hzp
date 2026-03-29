@@ -89,7 +89,7 @@ npm run dev
 | 角色 | 邮箱 | 密码 |
 |------|------|------|
 | 管理员 | admin@packaging.local | admin123 |
-| 商家 | vendor@packaging.local | vendor123 |
+| 厂家 | vendor@packaging.local | vendor123 |
 | 买家 | buyer@packaging.local | buyer123 |
 
 ⚠️ **生产环境请立即修改这些密码！**
@@ -104,7 +104,7 @@ npm run dev
 
 ### 产品管理
 - `GET /api/products` - 获取产品列表（支持分页、筛选）
-- `POST /api/products` - 上传产品（仅商家）
+- `POST /api/products` - 上传产品（仅厂家）
 
 ### 设计会话
 - `GET /api/design/save` - 获取设计方案列表
@@ -152,7 +152,7 @@ npm run start            # 启动生产服务器
 │   ├── components/
 │   │   ├── ui/                # UI 组件库
 │   │   ├── 3d/                # 3D 组件
-│   │   └── vendor/            # 商家组件
+│   │   └── vendor/            # 厂家组件
 │   └── lib/
 │       ├── db.ts              # 数据库连接
 │       ├── s3.ts              # MinIO 客户端

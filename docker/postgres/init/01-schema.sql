@@ -184,7 +184,7 @@ VALUES (
     NOW()
 );
 
--- 创建示例商家账号 (密码: vendor123)
+-- 创建示例厂家账号 (密码: vendor123)
 INSERT INTO profiles (email, password_hash, role, company_name, is_verified, email_verified)
 VALUES (
     'vendor@packaging.local',
@@ -225,7 +225,7 @@ LEFT JOIN design_sessions ds ON p.id = ds.product_id
 LEFT JOIN inquiries i ON p.id = i.product_id
 GROUP BY p.id;
 
--- 商家统计视图
+-- 厂家统计视图
 CREATE VIEW vendor_stats AS
 SELECT 
     pr.id,
@@ -247,7 +247,7 @@ GROUP BY pr.id;
 
 COMMENT ON DATABASE packaging_saas IS '3D Packaging SaaS - Self-Hosted v1.0';
 COMMENT ON TABLE profiles IS '用户资料表，包含所有角色 (admin/vendor/buyer)';
-COMMENT ON TABLE products IS '商家产品表';
+COMMENT ON TABLE products IS '厂家产品表';
 COMMENT ON TABLE material_presets IS '产品材质预设配置';
 COMMENT ON TABLE design_sessions IS '买家定制设计会话';
 COMMENT ON TABLE inquiries IS '询价记录';

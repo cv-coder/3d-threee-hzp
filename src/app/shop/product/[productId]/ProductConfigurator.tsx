@@ -114,7 +114,7 @@ export default function ProductConfigurator({
         throw new Error('询价失败');
       }
 
-      alert('询价请求已发送！商家会尽快回复您。');
+      alert('询价请求已发送！厂家会尽快回复您。');
       setShowInquiryForm(false);
       setInquiryData({ quantity: product.moq.toString(), message: '' });
     } catch (error) {
@@ -184,7 +184,7 @@ export default function ProductConfigurator({
                     {product.vendor && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Building2 className="h-4 w-4" />
-                        <span>{product.vendor.company_name || '未命名商家'}</span>
+                        <span>{product.vendor.company_name || '未命名厂家'}</span>
                         {product.vendor.is_verified && (
                           <span className="text-green-600">✓ 已认证</span>
                         )}
@@ -262,7 +262,7 @@ export default function ProductConfigurator({
                 
                 {user && user.role === 'vendor' && (
                   <p className="text-xs text-center text-red-500">
-                    商家账号不能发起询价
+                    厂家账号不能发起询价
                   </p>
                 )}
               </CardContent>
@@ -273,7 +273,7 @@ export default function ProductConfigurator({
               <Card>
                 <CardHeader>
                   <CardTitle>发起询价</CardTitle>
-                  <CardDescription>告诉商家您的需求</CardDescription>
+                  <CardDescription>告诉厂家您的需求</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">

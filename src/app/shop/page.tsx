@@ -6,7 +6,7 @@ import { formatPrice } from '@/lib/utils';
 import { Building2, Package } from 'lucide-react';
 
 export default async function ShopPage() {
-  // 获取所有已认证的商家
+  // 获取所有已认证的厂家
   const vendors = await db.findMany<any>(
     `SELECT id, email, company_name, is_verified, created_at 
      FROM profiles 
@@ -14,7 +14,7 @@ export default async function ShopPage() {
      ORDER BY created_at DESC`
   );
 
-  // 获取所有上架的产品（包含商家信息）
+  // 获取所有上架的产品（包含厂家信息）
   const products = await db.findMany<any>(
     `SELECT 
       p.*,
@@ -49,7 +49,7 @@ export default async function ShopPage() {
       </header>
 
       <div className="container mx-auto px-4 py-8">
-        {/* 商家展示 */}
+        {/* 厂家展示 */}
         <section className="mb-12">
           <div className="flex items-center gap-3 mb-6">
             <Building2 className="h-6 w-6 text-blue-600" />
@@ -66,7 +66,7 @@ export default async function ShopPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <CardTitle className="text-lg truncate">
-                        {vendor.company_name || '未命名商家'}
+                        {vendor.company_name || '未命名厂家'}
                       </CardTitle>
                       {vendor.is_verified && (
                         <span className="text-xs text-green-600">✓ 已认证</span>
@@ -88,7 +88,7 @@ export default async function ShopPage() {
           {(!vendors || vendors.length === 0) && (
             <Card>
               <CardContent className="py-12 text-center text-gray-500">
-                暂无认证商家
+                暂无认证厂商
               </CardContent>
             </Card>
           )}

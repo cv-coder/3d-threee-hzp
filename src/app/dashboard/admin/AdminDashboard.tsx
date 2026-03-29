@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BadgeCheck, Building2, LogOut, RefreshCw, ShieldCheck } from 'lucide-react';
+import { BadgeCheck, Building2, LogOut, RefreshCw, Search, ShieldCheck, X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 
 type AdminProfile = {
   id: string;
@@ -31,9 +32,23 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
   const [workingId, setWorkingId] = useState<string | null>(null);
+  const [searchText, setSearchText] = useState('');
 
   const verifiedCount = useMemo(() => vendors.filter((v) => v.is_verified).length, [vendors]);
   const pendingCount = useMemo(() => vendors.filter((v) => !v.is_verified).length, [vendors]);
+
+  // 模糊搜索厂家（支持公司名称和邮箱）
+  const filteredVendors = useMemo(() => {
+    if (!searchText.trim()) {
+      return vendors;
+    }
+    const query = searchText.toLowerCase();
+    return vendors.filter(
+      (v) =>
+        (v.company_name?.toLowerCase() || '').includes(query) ||
+        v.email.toLowerCase().includes(query)
+    );
+  }, [vendors, searchText]);
 
   const loadVendors = async () => {
     setLoading(true);
@@ -107,19 +122,19 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl">{vendors.length}</CardTitle>
-              <CardDescription>商家总数</CardDescription>
+              <CardDescription>厂家总数</CardDescription>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl text-green-600">{verifiedCount}</CardTitle>
-              <CardDescription>已认证商家</CardDescription>
+              <CardDescription>已认证厂家</CardDescription>
             </CardHeader>
           </Card>
           <Card>
             <CardHeader>
               <CardTitle className="text-2xl text-amber-600">{pendingCount}</CardTitle>
-              <CardDescription>待认证商家</CardDescription>
+              <CardDescription>待认证厂家</CardDescription>
             </CardHeader>
           </Card>
         </div>
@@ -128,29 +143,63 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShieldCheck className="h-5 w-5 text-blue-600" />
-              商家认证管理
+              厂家认证管理
             </CardTitle>
-            <CardDescription>开启后商家会出现在公开展厅“认证厂商”列表</CardDescription>
+            <CardDescription>开启后厂家会出现在公开展厅"认证厂商"列表</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            {/* 搜索框 */}
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="搜索厂家名称、邮箱..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                {searchText && (
+                  <button
+                    onClick={() => setSearchText('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
             {loading && <p className="text-sm text-gray-500">加载中...</p>}
 
             {!loading && vendors.length === 0 && (
-              <p className="text-sm text-gray-500">暂无商家账号</p>
+              <p className="text-sm text-gray-500">暂无厂家账号</p>
             )}
 
-            {!loading && vendors.map((vendor) => (
-              <div
-                key={vendor.id}
-                className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
-              >
+            {!loading && filteredVendors.length === 0 && searchText && (
+              <p className="text-sm text-gray-500">
+                未找到匹配的厂家 "{searchText}"
+              </p>
+            )}
+
+            {!loading && filteredVendors.length > 0 && searchText && (
+              <p className="text-sm text-gray-500">
+                找到 {filteredVendors.length} 个匹配结果
+              </p>
+            )}
+
+            <div className="space-y-3">
+              {filteredVendors.map((vendor) => (
+                <div
+                  key={vendor.id}
+                  className="border rounded-lg p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4"
+                >
                 <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center">
                     <Building2 className="h-5 w-5" />
                   </div>
                   <div>
                     <div className="font-semibold text-gray-900">
-                      {vendor.company_name || '未命名商家'}
+                      {vendor.company_name || '未命名厂家'}
                     </div>
                     <div className="text-sm text-gray-600">{vendor.email}</div>
                     <div className="mt-1">
@@ -187,6 +236,7 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
                 </div>
               </div>
             ))}
+            </div>
           </CardContent>
         </Card>
       </main>

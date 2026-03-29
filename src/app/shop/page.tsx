@@ -3,17 +3,9 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatPrice } from '@/lib/utils';
-import { Building2, Package } from 'lucide-react';
+import { Package } from 'lucide-react';
 
 export default async function ShopPage() {
-  // 获取所有已认证的厂家
-  const vendors = await db.findMany<any>(
-    `SELECT id, email, company_name, is_verified, created_at 
-     FROM profiles 
-     WHERE role = 'vendor' AND is_verified = true 
-     ORDER BY created_at DESC`
-  );
-
   // 获取所有上架的产品（包含厂家信息）
   const products = await db.findMany<any>(
     `SELECT 
@@ -28,7 +20,7 @@ export default async function ShopPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -48,52 +40,7 @@ export default async function ShopPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* 厂家展示 */}
-        <section className="mb-12">
-          <div className="flex items-center gap-3 mb-6">
-            <Building2 className="h-6 w-6 text-blue-600" />
-            <h2 className="text-2xl font-bold">认证厂商</h2>
-          </div>
-          
-          <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {vendors?.map((vendor) => (
-              <Card key={vendor.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                      {vendor.company_name?.[0] || vendor.email[0].toUpperCase()}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">
-                        {vendor.company_name || '未命名厂家'}
-                      </CardTitle>
-                      {vendor.is_verified && (
-                        <span className="text-xs text-green-600">✓ 已认证</span>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <Link href={`/shop/vendor/${vendor.id}`}>
-                    <Button variant="outline" className="w-full">
-                      查看店铺
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {(!vendors || vendors.length === 0) && (
-            <Card>
-              <CardContent className="py-12 text-center text-gray-500">
-                暂无认证厂商
-              </CardContent>
-            </Card>
-          )}
-        </section>
-
+      <div className="container mx-auto px-4 py-8 flex-1">
         {/* 产品展示 */}
         <section>
           <div className="flex items-center gap-3 mb-6">
@@ -123,6 +70,9 @@ export default async function ShopPage() {
                     <CardDescription className="line-clamp-2">
                       {product.description || '暂无描述'}
                     </CardDescription>
+                    <div className="text-sm text-gray-600 mt-1">
+                      厂家：{product.vendor_company_name || product.vendor_email}
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="flex items-center justify-between">

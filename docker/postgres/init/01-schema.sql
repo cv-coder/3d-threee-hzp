@@ -178,7 +178,7 @@ CREATE TRIGGER update_orders_updated_at
 INSERT INTO profiles (email, password_hash, role, is_verified, email_verified)
 VALUES (
     'admin@packaging.local',
-    '$2b$10$rZ5ZG8KpAYJR5q5YhP5N1.K5jkj0lL8J6Y5H3M1M0K5J5L8K6Y5H3M',  -- admin123
+    '$2a$10$Uezq4emM1gizz9dIyqmLIuENATSHds69Vx53s3mInkda7dvqTauJS',  -- admin123
     'admin',
     TRUE,
     NOW()
@@ -188,7 +188,7 @@ VALUES (
 INSERT INTO profiles (email, password_hash, role, company_name, is_verified, email_verified)
 VALUES (
     'vendor@packaging.local',
-    '$2b$10$rZ5ZG8KpAYJR5q5YhP5N1.K5jkj0lL8J6Y5H3M1M0K5J5L8K6Y5H3M',  -- vendor123
+    '$2a$10$BzcpeEuzzZknu/7P7fuyAuhy50V/cK8D8L10CEMoPJ/VXeO6A4kOG',  -- vendor123
     'vendor',
     'Premium Bottles Co.',
     TRUE,
@@ -199,7 +199,7 @@ VALUES (
 INSERT INTO profiles (email, password_hash, role, company_name, is_verified, email_verified)
 VALUES (
     'buyer@packaging.local',
-    '$2b$10$rZ5ZG8KpAYJR5q5YhP5N1.K5jkj0lL8J6Y5H3M1M0K5J5L8K6Y5H3M',  -- buyer123
+    '$2a$10$1uVS7RBO8u2sD8ABtKVi1.khY.CxO8n1NI/.nAjEDmFi9sBJMOTY2',  -- buyer123
     'buyer',
     'Brand Solutions Inc.',
     TRUE,

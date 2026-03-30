@@ -19,10 +19,10 @@ const sql = postgres(config);
 export async function testConnection() {
   try {
     await sql`SELECT 1 as connected`;
-    console.log('✅ Database connected successfully');
+    console.log('Database connected successfully');
     return true;
   } catch (error) {
-    console.error('❌ Database connection failed:', error);
+    console.error('Database connection failed:', error);
     return false;
   }
 }

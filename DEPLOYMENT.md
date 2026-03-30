@@ -2,11 +2,11 @@
 # 3D Packaging SaaS - 自托管部署指南
 # ================================================
 
-## 📋 概述
+## 概述
 
 本项目采用完全自托管架构，核心能力由 PostgreSQL、MinIO、NextAuth.js 和 Next.js API Routes 提供。
 
-## 🏗️ 当前架构
+## 当前架构
 
 | 组件 | 实现 |
 |------|------|
@@ -16,7 +16,7 @@
 | 权限控制 | API 层权限校验 |
 | 部署方式 | Docker Compose |
 
-## 🚀 快速启动
+## 快速启动
 
 ### 1. 环境准备
 
@@ -67,7 +67,7 @@ npm install
 - Vendor: `vendor@packaging.local` / `vendor123`
 - Buyer: `buyer@packaging.local` / `buyer123`
 
-⚠️ **生产环境请立即修改这些默认密码！**
+**生产环境请立即修改这些默认密码！**
 
 ### 6. 启动开发服务器
 
@@ -77,7 +77,7 @@ npm run dev
 
 访问 `http://localhost:3000`
 
-## 📁 项目结构
+## 项目结构
 
 ```
 3D选型系统/
@@ -105,7 +105,7 @@ npm run dev
 └── .env.example                    # 环境变量模板
 ```
 
-## 🔐 安全配置
+## 安全配置
 
 ### 1. 更新默认密码
 
@@ -148,7 +148,7 @@ NEXTAUTH_SECRET=your_random_secret_key
 - 配置反向代理 (Nginx)
 - 启用 HTTPS
 
-## 📡 API 文档
+## API 文档
 
 ### 认证
 
@@ -211,7 +211,7 @@ NEXTAUTH_SECRET=your_random_secret_key
 - 买家：查看自己发起的询价
 - 厂家：查看收到的询价
 
-## 🧪 测试
+## 测试
 
 ### 测试上传功能
 
@@ -230,7 +230,7 @@ curl -X POST http://localhost:3000/api/products \
 - 用户名：`minioadmin`
 - 密码：`minioadmin`
 
-## 🛠️ 运维命令
+## 运维命令
 
 ### Docker 管理
 
@@ -238,7 +238,7 @@ curl -X POST http://localhost:3000/api/products \
 # 停止服务
 docker-compose down
 
-# 停止并删除数据卷（⚠️ 会清空数据）
+# 停止并删除数据卷（会清空数据）
 docker-compose down -v
 
 # 重启特定服务
@@ -271,7 +271,7 @@ docker exec 3d-packaging-minio mc ls myminio
 docker exec 3d-packaging-minio mc anonymous get myminio/3d-models
 ```
 
-## 🚨 故障排查
+## 故障排查
 
 ### 数据库连接失败
 
@@ -291,17 +291,17 @@ docker exec 3d-packaging-minio mc anonymous get myminio/3d-models
 2. 验证 `NEXTAUTH_SECRET` 已设置
 3. 检查数据库中的 `profiles` 表
 
-## 📚 相关文档
+## 相关文档
 
 - [PostgreSQL Docker 官方文档](https://hub.docker.com/_/postgres)
 - [MinIO 官方文档](https://min.io/docs/minio/linux/index.html)
 - [NextAuth.js 文档](https://next-auth.js.org/)
 - [AWS SDK for JavaScript v3](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/)
 
-## 🤝 贡献指南
+## 贡献指南
 
 欢迎提交 Issue 和 Pull Request！
 
-## 📄 License
+## License
 
 MIT

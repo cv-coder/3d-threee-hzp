@@ -2,17 +2,17 @@
 
 > 多租户 B2B 3D包材SaaS平台 - 完全自托管架构
 
-## 📋 项目概述
+## 项目概述
 
 一个完全自托管的3D包材定制SaaS平台，允许"包材厂商"上传3D模型并上架产品，"品牌方"在线浏览、定制瓶子材质并发起询价。
 
 **架构特点**:
-- ✅ 完全数据掌控权（无第三方依赖）
-- ✅ Docker 一键部署
-- ✅ 生产级别的安全性
-- ✅ 高性能对象存储（MinIO）
+- 完全数据掌控权（无第三方依赖）
+- Docker 一键部署
+- 生产级别的安全性
+- 高性能对象存储（MinIO）
 
-## 🏗️ 技术栈
+## 技术栈
 
 | 类型 | 技术 |
 |------|------|
@@ -24,7 +24,7 @@
 | **状态管理** | Zustand |
 | **容器化** | Docker, Docker Compose |
 
-## 🚀 快速开始
+## 快速开始
 
 ### 方式一：一键启动脚本（推荐）
 
@@ -84,7 +84,7 @@ npm run dev
 
 访问 `http://localhost:3000`
 
-## 🔑 默认测试账号
+## 默认测试账号
 
 | 角色 | 邮箱 | 密码 |
 |------|------|------|
@@ -92,11 +92,11 @@ npm run dev
 | 厂家 | vendor@packaging.local | vendor123 |
 | 买家 | buyer@packaging.local | buyer123 |
 
-⚠️ **生产环境请立即修改这些密码！**
+**生产环境请立即修改这些密码！**
 
 访问 http://localhost:3000
 
-## 📡 核心 API
+## 核心 API
 
 ### 认证
 - `POST /api/auth/signin` - 登录
@@ -116,7 +116,7 @@ npm run dev
 
 详细 API 文档请查看 [DEPLOYMENT.md](./DEPLOYMENT.md)
 
-## 🛠️ 常用命令
+## 常用命令
 
 ```bash
 # Docker 管理
@@ -134,7 +134,7 @@ npm run build            # 构建生产版本
 npm run start            # 启动生产服务器
 ```
 
-## 📁 项目结构
+## 项目结构
 
 ```
 3D选型系统/
@@ -164,22 +164,22 @@ npm run start            # 启动生产服务器
 └── start.sh / start.bat       # 一键启动脚本
 ```
 
-## 📚 文档
+## 文档
 
 - **[DEPLOYMENT.md](./DEPLOYMENT.md)** - 详细部署指南和API文档
 - **[process.md](./process.md)** - 开发进度文档
 
-## 🔐 安全建议
+## 安全建议
 
 生产环境部署前必须：
-1. ✅ 修改所有默认密码
-2. ✅ 生成安全的 `NEXTAUTH_SECRET`
-3. ✅ 配置 SSL/TLS
-4. ✅ 设置防火墙规则
-5. ✅ 启用数据库备份
-6. ✅ 配置访问日志和监控
+1. 修改所有默认密码
+2. 生成安全的 `NEXTAUTH_SECRET`
+3. 配置 SSL/TLS
+4. 设置防火墙规则
+5. 启用数据库备份
+6. 配置访问日志和监控
 
-## 🆘 故障排查
+## 故障排查
 
 ### 数据库连接失败
 ```bash
@@ -196,10 +196,10 @@ docker-compose logs postgres         # 查看日志
 
 详细故障排查请查看 [DEPLOYMENT.md](./DEPLOYMENT.md#故障排查)
 
-## 🤝 贡献
+## 贡献
 
 欢迎提交 Issue 和 Pull Request！
 
-## 📄 开源协议
+## 开源协议
 
 MIT

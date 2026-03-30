@@ -5,12 +5,13 @@ import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Package, Upload, FileBox, LogOut, Boxes } from 'lucide-react';
+import { Package, FileBox, LogOut, Boxes, X } from 'lucide-react';
 import type { Profile, Product } from '@/types/database';
 import MyModels from './components/MyModels';
 import ProductList from './components/ProductList';
 import ProductCreator from './components/ProductCreator';
 import ProductEditor from './components/product-editor';
+import ModelUploadArea from './components/ModelUploadArea';
 
 interface VendorDashboardProps {
   profile: Profile;
@@ -24,6 +25,7 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -160,7 +162,7 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                         <Button
                           size="sm"
                           className="mt-2"
-                          onClick={() => setActiveTab('models')}
+                          onClick={() => setShowUploadModal(true)}
                         >
                           立即上传
                         </Button>
@@ -253,6 +255,35 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
           </main>
         </div>
       </div>
+
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b bg-white px-4 py-3">
+              <h3 className="text-lg font-semibold text-gray-900">上传 3D 模型</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowUploadModal(false)}
+                aria-label="关闭上传弹窗"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <ModelUploadArea
+                vendorId={profile.id}
+                onUploaded={async () => {
+                  setShowUploadModal(false);
+                  await loadData();
+                  setActiveTab('models');
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Upload, Trash2, Eye, FileBox, CheckCircle, XCircle, X } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Upload, Trash2, Eye, FileBox, X } from 'lucide-react';
+import ModelUploadArea from './ModelUploadArea';
 
 interface ModelAsset {
   id: string;
@@ -21,15 +22,9 @@ interface MyModelsProps {
 export default function MyModels({ vendorId }: MyModelsProps) {
   const [models, setModels] = useState<ModelAsset[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showUpload, setShowUpload] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
   const [previewModel, setPreviewModel] = useState<ModelAsset | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  // 上传相关状态
-  const [uploading, setUploading] = useState(false);
-  const [dragActive, setDragActive] = useState(false);
-  const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [uploadMessage, setUploadMessage] = useState('');
 
   const loadModels = async () => {
     try {
@@ -68,88 +63,6 @@ export default function MyModels({ vendorId }: MyModelsProps) {
     }
   };
 
-  // 上传处理
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') setDragActive(true);
-    else if (e.type === 'dragleave') setDragActive(false);
-  }, []);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFiles(e.dataTransfer.files);
-    }
-  }, []);
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    if (e.target.files && e.target.files[0]) handleFiles(e.target.files);
-  };
-
-  const handleFiles = async (files: FileList) => {
-    const file = files[0];
-
-    if (!file.name.endsWith('.glb') && !file.name.endsWith('.gltf')) {
-      setUploadStatus('error');
-      setUploadMessage('只支持 .glb 或 .gltf 格式的文件');
-      return;
-    }
-
-    if (file.size > 50 * 1024 * 1024) {
-      setUploadStatus('error');
-      setUploadMessage('文件大小不能超过 50MB');
-      return;
-    }
-
-    setUploading(true);
-    setUploadStatus('idle');
-    setUploadMessage('');
-
-    try {
-      // 保存模型元数据
-      const modelName = file.name.replace(/\.(glb|gltf)$/i, '');
-      const filePath = `models/${vendorId}/${Date.now()}_${file.name}`;
-
-      const res = await fetch('/api/models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: modelName,
-          filePath,
-          fileSize: file.size,
-          originalFilename: file.name,
-        }),
-      });
-
-      if (!res.ok) throw new Error('保存模型记录失败');
-
-      setUploadStatus('success');
-      setUploadMessage('模型上传成功！');
-      await loadModels();
-
-      setTimeout(() => {
-        setUploadStatus('idle');
-        setUploadMessage('');
-        setShowUpload(false);
-      }, 2000);
-    } catch {
-      setUploadStatus('error');
-      setUploadMessage('上传失败，请重试');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const formatFileSize = (bytes: number | null) => {
-    if (!bytes) return '未知大小';
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('zh-CN', {
       year: 'numeric',
@@ -168,77 +81,11 @@ export default function MyModels({ vendorId }: MyModelsProps) {
           <h2 className="text-2xl font-bold">我的模型</h2>
           <p className="text-sm text-gray-500 mt-1">共 {models.length} 个模型</p>
         </div>
-        <Button onClick={() => { setShowUpload(!showUpload); setUploadStatus('idle'); setUploadMessage(''); }}>
+        <Button onClick={() => setShowUploadModal(true)}>
           <Upload className="h-4 w-4 mr-2" />
           上传模型
         </Button>
       </div>
-
-      {/* 上传区域（折叠） */}
-      {showUpload && (
-        <Card className="border-blue-200 bg-blue-50/30">
-          <CardHeader className="pb-3">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-lg">上传新模型</CardTitle>
-              <Button variant="ghost" size="icon" onClick={() => setShowUpload(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-            <CardDescription>支持 .glb 和 .gltf 格式，文件大小不超过 50MB</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div
-              className={`relative border-2 border-dashed rounded-lg p-10 text-center transition-colors ${
-                dragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <input
-                type="file"
-                id="model-file-upload"
-                className="hidden"
-                accept=".glb,.gltf"
-                onChange={handleChange}
-                disabled={uploading}
-              />
-              <div className="flex flex-col items-center gap-3">
-                {uploadStatus === 'idle' && (
-                  <>
-                    <Upload className="h-10 w-10 text-gray-400" />
-                    <p className="text-gray-700 font-medium">拖拽文件到此处，或</p>
-                    <Button
-                      type="button"
-                      disabled={uploading}
-                      onClick={() => document.getElementById('model-file-upload')?.click()}
-                    >
-                      {uploading ? '上传中...' : '选择文件'}
-                    </Button>
-                    <p className="text-sm text-gray-500">GLB / GLTF · 最大 50MB</p>
-                  </>
-                )}
-                {uploadStatus === 'success' && (
-                  <div className="flex flex-col items-center gap-2 text-green-600">
-                    <CheckCircle className="h-10 w-10" />
-                    <p className="font-semibold">{uploadMessage}</p>
-                  </div>
-                )}
-                {uploadStatus === 'error' && (
-                  <div className="flex flex-col items-center gap-2 text-red-600">
-                    <XCircle className="h-10 w-10" />
-                    <p className="font-semibold">{uploadMessage}</p>
-                    <Button variant="outline" onClick={() => setUploadStatus('idle')}>
-                      重新上传
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* 模型列表 */}
       {loading ? (
@@ -360,6 +207,34 @@ export default function MyModels({ vendorId }: MyModelsProps) {
                   <span>{formatDate(previewModel.created_at)}</span>
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUploadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="relative w-full max-w-2xl rounded-xl bg-white shadow-xl">
+            <div className="flex items-center justify-between border-b px-4 py-3">
+              <h3 className="text-lg font-semibold text-gray-900">上传新模型</h3>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowUploadModal(false)}
+                aria-label="关闭上传弹窗"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+            <div className="p-4">
+              <ModelUploadArea
+                vendorId={vendorId}
+                onUploaded={async () => {
+                  await loadModels();
+                  setShowUploadModal(false);
+                }}
+              />
             </div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -182,8 +183,8 @@ export default function MyModels({ vendorId }: MyModelsProps) {
         </div>
       )}
 
-      {/* 预览弹窗 */}
-      {previewModel && (
+      {/* 预览弹窗 - Portal 到 body 保证遮罩全屏覆盖 */}
+      {previewModel && createPortal(
         <div
           className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
           onClick={() => setPreviewModel(null)}
@@ -206,6 +207,7 @@ export default function MyModels({ vendorId }: MyModelsProps) {
                     modelUrl={previewModelUrl}
                     config={{ color: '#ffffff', roughness: 0.3, metalness: 0.1 }}
                     className="h-full w-full"
+                    preserveMaterials
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center">
@@ -238,10 +240,11 @@ export default function MyModels({ vendorId }: MyModelsProps) {
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {showUploadModal && (
+      {showUploadModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="relative w-full max-w-2xl rounded-xl bg-white shadow-xl">
             <div className="flex items-center justify-between border-b px-4 py-3">
@@ -265,7 +268,8 @@ export default function MyModels({ vendorId }: MyModelsProps) {
               />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

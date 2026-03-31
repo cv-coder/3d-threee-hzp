@@ -43,6 +43,7 @@ export default function ProductConfigurator({
       metalness: 0.1,
     }
   );
+  const [userModified, setUserModified] = useState(false);
   const [saving, setSaving] = useState(false);
   const [inquiring, setInquiring] = useState(false);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
@@ -176,7 +177,7 @@ export default function ProductConfigurator({
               <CardContent className="p-0">
                 <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden" style={{ height: '600px' }}>
                   {modelUrl ? (
-                    <Configurator3D modelUrl={modelUrl} config={config} />
+                    <Configurator3D modelUrl={modelUrl} config={config} preserveMaterials={!userModified} />
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
@@ -248,7 +249,7 @@ export default function ProductConfigurator({
           <div className="space-y-6">
             <MaterialControls
               config={config}
-              onChange={setConfig}
+              onChange={(c) => { setUserModified(true); setConfig(c); }}
               disabled={!modelUrl}
             />
 

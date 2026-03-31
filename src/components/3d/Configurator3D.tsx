@@ -7,6 +7,8 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import * as THREE from 'three';
 import type { MaterialConfig } from '@/types/database';
 
+const LOCAL_ENVIRONMENT_MAP = '/hdr/studio_small_03_1k.hdr';
+
 interface Model3DProps {
   modelUrl: string;
   config: MaterialConfig;
@@ -69,8 +71,8 @@ export default function Configurator3D({ modelUrl, config, className = '' }: Con
           {/* 3D模型 */}
           <Model modelUrl={modelUrl} config={config} />
 
-          {/* 环境贴图 */}
-          <Environment preset="studio" />
+          {/* 使用本地 HDR，避免运行时请求外网资源 */}
+          <Environment files={LOCAL_ENVIRONMENT_MAP} />
 
           {/* 阴影 */}
           <ContactShadows

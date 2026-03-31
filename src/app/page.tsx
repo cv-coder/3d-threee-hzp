@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { Factory, Palette, MessageSquare } from 'lucide-react';
 
 export default async function Home() {
   const session = await auth();
@@ -27,7 +28,7 @@ export default async function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       <nav className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <h1 className="text-2xl font-bold text-gray-900">
             3D包材选型系统
           </h1>
           <div className="space-x-4">
@@ -51,24 +52,24 @@ export default async function Home() {
           </p>
 
           <div className="grid md:grid-cols-3 gap-8 mt-16">
-            <div className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-4xl mb-4">🏭</div>
+            <div className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow flex flex-col items-center">
+              <Factory className="size-10 text-blue-600 mb-4" />
               <h3 className="text-xl font-semibold mb-2">厂商入驻</h3>
               <p className="text-gray-600">
                 上传3D模型，展示产品，接收询价订单
               </p>
             </div>
 
-            <div className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-4xl mb-4">🎨</div>
+            <div className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow flex flex-col items-center">
+              <Palette className="size-10 text-purple-600 mb-4" />
               <h3 className="text-xl font-semibold mb-2">3D定制</h3>
               <p className="text-gray-600">
                 实时预览材质颜色，上传Logo，所见即所得
               </p>
             </div>
 
-            <div className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="text-4xl mb-4">💬</div>
+            <div className="p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow flex flex-col items-center">
+              <MessageSquare className="size-10 text-green-600 mb-4" />
               <h3 className="text-xl font-semibold mb-2">快速询价</h3>
               <p className="text-gray-600">
                 保存设计方案，一键发起询价，对接厂商

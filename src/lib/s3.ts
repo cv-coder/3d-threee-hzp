@@ -8,14 +8,29 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+function resolveMinioCredentials() {
+  const rootUser = process.env.MINIO_ROOT_USER;
+  const rootPassword = process.env.MINIO_ROOT_PASSWORD;
+  const accessKey = process.env.MINIO_ACCESS_KEY;
+  const secretKey = process.env.MINIO_SECRET_KEY;
+
+  // In this project docker-compose and minio-init both use MINIO_ROOT_*.
+  // If both pairs exist but conflict, prefer ROOT to avoid auth mismatch.
+  if (rootUser && accessKey && rootUser !== accessKey) {
+    console.warn('[S3] MINIO_ROOT_USER and MINIO_ACCESS_KEY mismatch detected, using MINIO_ROOT_USER.');
+  }
+
+  return {
+    accessKeyId: rootUser || accessKey || 'minioadmin',
+    secretAccessKey: rootPassword || secretKey || 'minioadmin',
+  };
+}
+
 // MinIO 配置
 const S3_CONFIG = {
   endpoint: `http://${process.env.MINIO_ENDPOINT || 'localhost'}:${process.env.MINIO_PORT || '9000'}`,
   region: 'us-east-1', // MinIO 默认 region
-  credentials: {
-    accessKeyId: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-    secretAccessKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-  },
+  credentials: resolveMinioCredentials(),
   forcePathStyle: true, // 必须开启，MinIO 要求
 };
 
@@ -154,10 +169,11 @@ export async function listFiles(
 export async function upload3DModel(
   vendorId: string,
   filename: string,
-  buffer: Buffer
+  buffer: Buffer,
+  contentType?: string
 ): Promise<string> {
   const key = `${vendorId}/${Date.now()}-${filename}`;
-  return await uploadFile(BUCKETS.MODELS, key, buffer, 'model/gltf-binary');
+  return await uploadFile(BUCKETS.MODELS, key, buffer, contentType || 'application/octet-stream');
 }
 
 /**

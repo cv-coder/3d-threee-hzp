@@ -2,6 +2,24 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
+function normalizeModelUrl(path: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+  const baseUrl = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000';
+  const normalized = path.replace(/^\/+/, '');
+
+  if (normalized.startsWith('3d-models/')) {
+    return `${baseUrl}/${normalized}`;
+  }
+
+  if (normalized.startsWith('models/')) {
+    return `${baseUrl}/3d-models/${normalized.slice('models/'.length)}`;
+  }
+
+  return `${baseUrl}/3d-models/${normalized}`;
+}
+
 /**
  * GET /api/models - 获取当前用户的模型资产列表
  */
@@ -29,11 +47,16 @@ export async function GET(req: NextRequest) {
       [session.user.id]
     );
 
+    const modelsWithFileUrl = models.map((model: any) => ({
+      ...model,
+      file_url: normalizeModelUrl(model.file_path || null),
+    }));
+
     return NextResponse.json({
       success: true,
       data: {
-        models,
-        total: models.length,
+        models: modelsWithFileUrl,
+        total: modelsWithFileUrl.length,
       },
     });
   } catch (error) {

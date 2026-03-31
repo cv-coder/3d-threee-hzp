@@ -273,7 +273,6 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
             </div>
             <div className="p-4">
               <ModelUploadArea
-                vendorId={profile.id}
                 onUploaded={async () => {
                   setShowUploadModal(false);
                   await loadData();

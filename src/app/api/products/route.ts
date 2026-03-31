@@ -89,7 +89,7 @@ export const POST = withAuth(
   async (req: NextRequest, session) => {
     try {
       const body = await req.json();
-      const { name, description, price, moq, tags, config_defaults, status } = body;
+      const { name, description, price, moq, tags, config_defaults, status, model_url } = body;
 
       if (!name) {
         return NextResponse.json<ApiResponse>(
@@ -103,6 +103,7 @@ export const POST = withAuth(
           vendor_id,
           name,
           description,
+          model_url,
           price,
           moq,
           tags,
@@ -112,6 +113,7 @@ export const POST = withAuth(
           ${session.user.id},
           ${name},
           ${description || null},
+          ${model_url || null},
           ${price ?? null},
           ${moq ?? 1000},
           ${tags ?? []},

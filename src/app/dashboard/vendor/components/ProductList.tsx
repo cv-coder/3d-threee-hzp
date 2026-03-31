@@ -1,11 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate, formatPrice } from '@/lib/utils';
-import { Eye, Edit, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Eye, Edit, Trash2, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import type { Product } from '@/types/database';
+
+const Configurator3D = dynamic(
+  () => import('@/components/3d/Configurator3D'),
+  { ssr: false }
+);
 
 interface ProductListProps {
   products: Product[];
@@ -13,8 +19,28 @@ interface ProductListProps {
   onEdit: (product: Product) => void;
 }
 
+function resolveModelUrl(path?: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+  const baseUrl = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000';
+  const normalized = path.replace(/^\/+/, '');
+
+  if (normalized.startsWith('3d-models/')) {
+    return `${baseUrl}/${normalized}`;
+  }
+
+  if (normalized.startsWith('models/')) {
+    return `${baseUrl}/3d-models/${normalized.slice('models/'.length)}`;
+  }
+
+  return `${baseUrl}/3d-models/${normalized}`;
+}
+
 export default function ProductList({ products, onUpdate, onEdit }: ProductListProps) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+  const previewModelUrl = resolveModelUrl(previewProduct?.model_url);
 
   const toggleProductStatus = async (productId: string, currentStatus: string) => {
     setLoading(productId);
@@ -158,7 +184,7 @@ export default function ProductList({ products, onUpdate, onEdit }: ProductListP
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => window.open(`/shop/product/${product.id}`, '_blank')}
+                    onClick={() => setPreviewProduct(product)}
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     预览
@@ -186,6 +212,57 @@ export default function ProductList({ products, onUpdate, onEdit }: ProductListP
           </CardContent>
         </Card>
       ))}
+
+      {previewProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setPreviewProduct(null)}
+        >
+          <div
+            className="w-full max-w-6xl rounded-xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-5 py-3">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{previewProduct.name}</h3>
+                <p className="text-sm text-gray-500">产品 3D 预览</p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setPreviewProduct(null)}
+                aria-label="关闭预览弹窗"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+
+            <div className="p-5">
+              <div className="relative h-[60vh] min-h-[420px] rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+                {previewModelUrl ? (
+                  <Configurator3D
+                    modelUrl={previewModelUrl}
+                    config={previewProduct.config_defaults || {
+                      color: '#ffffff',
+                      roughness: 0.3,
+                      metalness: 0.1,
+                    }}
+                    className="h-full w-full"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-center">
+                    <div>
+                      <div className="text-5xl text-gray-300">📦</div>
+                      <p className="mt-3 text-gray-500">该产品暂未绑定 3D 模型</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

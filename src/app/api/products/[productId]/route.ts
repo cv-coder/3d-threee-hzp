@@ -30,6 +30,7 @@ export const PATCH = withAuth(
         status,
         name,
         description,
+        model_url,
         price,
         moq,
         tags,
@@ -38,6 +39,7 @@ export const PATCH = withAuth(
         status?: string;
         name?: string;
         description?: string | null;
+        model_url?: string | null;
         price?: number | null;
         moq?: number;
         tags?: string[];
@@ -68,6 +70,7 @@ export const PATCH = withAuth(
         status === undefined &&
         name === undefined &&
         description === undefined &&
+        model_url === undefined &&
         price === undefined &&
         moq === undefined &&
         tags === undefined &&
@@ -110,6 +113,7 @@ export const PATCH = withAuth(
       const nextStatus = status ?? existing.status;
       const nextName = name !== undefined ? String(name).trim() : existing.name;
       const nextDescription = description !== undefined ? description : (existing.description ?? null);
+      const nextModelUrl = model_url !== undefined ? model_url : (existing.model_url ?? null);
       const nextPrice = price !== undefined ? price : (existing.price ?? null);
       const nextMoq = moq !== undefined ? moq : existing.moq;
       const nextTags = tags !== undefined ? tags : (existing.tags ?? []);
@@ -122,6 +126,7 @@ export const PATCH = withAuth(
           status = ${nextStatus},
           name = ${nextName},
           description = ${nextDescription},
+          model_url = ${nextModelUrl},
           price = ${nextPrice},
           moq = ${nextMoq},
           tags = ${nextTags},

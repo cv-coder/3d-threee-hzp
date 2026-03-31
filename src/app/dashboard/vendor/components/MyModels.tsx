@@ -1,15 +1,22 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, Trash2, Eye, FileBox, X } from 'lucide-react';
 import ModelUploadArea from './ModelUploadArea';
 
+const Configurator3D = dynamic(
+  () => import('@/components/3d/Configurator3D'),
+  { ssr: false }
+);
+
 interface ModelAsset {
   id: string;
   name: string;
   file_path: string;
+  file_url?: string | null;
   original_filename: string | null;
   preview_url: string | null;
   created_at: string;
@@ -17,6 +24,24 @@ interface ModelAsset {
 
 interface MyModelsProps {
   vendorId: string;
+}
+
+function resolveModelUrl(path?: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+
+  const baseUrl = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000';
+  const normalized = path.replace(/^\/+/, '');
+
+  if (normalized.startsWith('3d-models/')) {
+    return `${baseUrl}/${normalized}`;
+  }
+
+  if (normalized.startsWith('models/')) {
+    return `${baseUrl}/3d-models/${normalized.slice('models/'.length)}`;
+  }
+
+  return `${baseUrl}/3d-models/${normalized}`;
 }
 
 export default function MyModels({ vendorId }: MyModelsProps) {
@@ -72,6 +97,8 @@ export default function MyModels({ vendorId }: MyModelsProps) {
       minute: '2-digit',
     });
   };
+
+  const previewModelUrl = previewModel?.file_url || resolveModelUrl(previewModel?.file_path);
 
   return (
     <div className="space-y-6">
@@ -172,18 +199,20 @@ export default function MyModels({ vendorId }: MyModelsProps) {
               </Button>
             </div>
             <div className="p-5 space-y-4">
-              {/* 预览图或占位 */}
-              <div className="aspect-video bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                {previewModel.preview_url ? (
-                  <img
-                    src={previewModel.preview_url}
-                    alt={previewModel.name}
-                    className="w-full h-full object-contain"
+              {/* 3D 预览 */}
+              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+                {previewModelUrl ? (
+                  <Configurator3D
+                    modelUrl={previewModelUrl}
+                    config={{ color: '#ffffff', roughness: 0.3, metalness: 0.1 }}
+                    className="h-full w-full"
                   />
                 ) : (
-                  <div className="flex flex-col items-center gap-2 text-gray-400">
-                    <FileBox className="h-16 w-16" />
-                    <p className="text-sm">暂无预览图</p>
+                  <div className="flex h-full items-center justify-center">
+                    <div className="flex flex-col items-center gap-2 text-gray-400">
+                      <FileBox className="h-16 w-16" />
+                      <p className="text-sm">模型地址不可用，无法预览 3D</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -229,7 +258,6 @@ export default function MyModels({ vendorId }: MyModelsProps) {
             </div>
             <div className="p-4">
               <ModelUploadArea
-                vendorId={vendorId}
                 onUploaded={async () => {
                   await loadModels();
                   setShowUploadModal(false);

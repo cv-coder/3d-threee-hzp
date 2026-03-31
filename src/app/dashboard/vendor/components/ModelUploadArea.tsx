@@ -5,11 +5,10 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Upload, XCircle } from 'lucide-react';
 
 interface ModelUploadAreaProps {
-  vendorId: string;
   onUploaded?: () => void | Promise<void>;
 }
 
-export default function ModelUploadArea({ vendorId, onUploaded }: ModelUploadAreaProps) {
+export default function ModelUploadArea({ onUploaded }: ModelUploadAreaProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -35,7 +34,7 @@ export default function ModelUploadArea({ vendorId, onUploaded }: ModelUploadAre
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       void handleFiles(e.dataTransfer.files);
     }
-  }, [vendorId]);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
@@ -66,17 +65,13 @@ export default function ModelUploadArea({ vendorId, onUploaded }: ModelUploadAre
 
     try {
       const modelName = file.name.replace(/\.(glb|gltf)$/i, '');
-      const filePath = `models/${vendorId}/${Date.now()}_${file.name}`;
+      const payload = new FormData();
+      payload.append('file', file);
+      payload.append('name', modelName);
 
-      const res = await fetch('/api/models', {
+      const res = await fetch('/api/models/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: modelName,
-          filePath,
-          fileSize: file.size,
-          originalFilename: file.name,
-        }),
+        body: payload,
       });
 
       if (!res.ok) {

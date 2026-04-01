@@ -190,7 +190,7 @@ export default function MyModels({ vendorId }: MyModelsProps) {
           onClick={() => setPreviewModel(null)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl w-full max-w-lg"
+            className="bg-white rounded-xl shadow-2xl w-full max-w-6xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center p-5 border-b">
@@ -201,7 +201,7 @@ export default function MyModels({ vendorId }: MyModelsProps) {
             </div>
             <div className="p-5 space-y-4">
               {/* 3D 预览 */}
-              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden">
+              <div className="relative h-[60vh] min-h-[420px] rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
                 {previewModelUrl ? (
                   <Configurator3D
                     modelUrl={previewModelUrl}

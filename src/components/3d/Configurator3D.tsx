@@ -162,7 +162,7 @@ function SceneContent({ modelUrl, config, preserveMaterials, onPartsDetected }: 
       <ambientLight intensity={0.6} />
       <directionalLight position={[12, 2, 3]} intensity={1.0} castShadow />
       <hemisphereLight args={[0xffffff, 0x444444, 0.4]} />
-      {/* <Environment files={LOCAL_ENVIRONMENT_MAP} background={false} /> */}
+      <Environment files={LOCAL_ENVIRONMENT_MAP} background={false} />
 
       {/* 3D模型 - 自动居中 */}
       <group ref={groupRef}>

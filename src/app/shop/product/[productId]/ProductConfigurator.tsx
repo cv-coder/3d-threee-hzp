@@ -13,7 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import MaterialControls from '@/components/3d/MaterialControls';
 import { formatPrice } from '@/lib/utils';
 import { ArrowLeft, Save, Send, Building2, LogOut, User } from 'lucide-react';
-import type { Product, Profile, MaterialConfig } from '@/types/database';
+import type { Product, Profile, MaterialConfig, ModelPart } from '@/types/database';
 
 // 动态导入3D组件（避免SSR问题）
 const Configurator3D = dynamic(
@@ -37,13 +37,10 @@ export default function ProductConfigurator({
   const { data: session, status } = useSession();
   const user = session?.user;
   const [config, setConfig] = useState<MaterialConfig>(
-    product.config_defaults || {
-      color: '#ffffff',
-      roughness: 0.3,
-      metalness: 0.1,
-    }
+    product.config_defaults || {}
   );
   const [userModified, setUserModified] = useState(false);
+  const [modelParts, setModelParts] = useState<ModelPart[]>([]);
   const [saving, setSaving] = useState(false);
   const [inquiring, setInquiring] = useState(false);
   const [showInquiryForm, setShowInquiryForm] = useState(false);
@@ -177,7 +174,12 @@ export default function ProductConfigurator({
               <CardContent className="p-0">
                 <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 rounded-lg overflow-hidden" style={{ height: '600px' }}>
                   {modelUrl ? (
-                    <Configurator3D modelUrl={modelUrl} config={config} preserveMaterials={!userModified} />
+                    <Configurator3D
+                      modelUrl={modelUrl}
+                      config={config}
+                      preserveMaterials={!userModified}
+                      onPartsDetected={setModelParts}
+                    />
                   ) : (
                     <div className="flex items-center justify-center h-full">
                       <div className="text-center">
@@ -250,6 +252,8 @@ export default function ProductConfigurator({
             <MaterialControls
               config={config}
               onChange={(c) => { setUserModified(true); setConfig(c); }}
+              onReset={() => setUserModified(false)}
+              parts={modelParts}
               disabled={!modelUrl}
             />
 

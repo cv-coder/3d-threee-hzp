@@ -54,12 +54,21 @@ export interface Product {
 }
 
 export interface MaterialConfig {
-  color: string;
-  roughness: number;
-  metalness: number;
+  color?: string;
+  roughness?: number;
+  metalness?: number;
   logoPosition?: { x: number; y: number; z: number };
   logoScale?: number;
   logoUrl?: string;
+  /** 分部位材质覆盖，key 为 mesh 名称 */
+  parts?: Record<string, { color: string }>;
+}
+
+/** 模型中单个可编辑部件的描述 */
+export interface ModelPart {
+  name: string;
+  displayName: string;
+  color: string;
 }
 
 export interface DesignSession {

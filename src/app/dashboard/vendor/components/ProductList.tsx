@@ -243,12 +243,9 @@ export default function ProductList({ products, onUpdate, onEdit }: ProductListP
                 {previewModelUrl ? (
                   <Configurator3D
                     modelUrl={previewModelUrl}
-                    config={previewProduct.config_defaults || {
-                      color: '#ffffff',
-                      roughness: 0.3,
-                      metalness: 0.1,
-                    }}
+                    config={previewProduct.config_defaults || {}}
                     className="h-full w-full"
+                    preserveMaterials
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-center">

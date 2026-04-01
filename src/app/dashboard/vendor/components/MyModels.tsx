@@ -205,7 +205,7 @@ export default function MyModels({ vendorId }: MyModelsProps) {
                 {previewModelUrl ? (
                   <Configurator3D
                     modelUrl={previewModelUrl}
-                    config={{ color: '#ffffff', roughness: 0.3, metalness: 0.1 }}
+                    config={{}}
                     className="h-full w-full"
                     preserveMaterials
                   />

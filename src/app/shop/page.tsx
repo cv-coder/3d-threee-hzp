@@ -1,11 +1,13 @@
 import { db } from '@/lib/db';
+import { auth } from '@/lib/auth';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatPrice } from '@/lib/utils';
-import { Package } from 'lucide-react';
+import { Package, User } from 'lucide-react';
 
 export default async function ShopPage() {
+  const session = await auth();
   // 获取所有上架的产品（包含厂家信息）
   const products = await db.findMany<any>(
     `SELECT 
@@ -29,14 +31,25 @@ export default async function ShopPage() {
               3D包材选型系统
             </h1>
           </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost">登录</Button>
-            </Link>
-            <Link href="/register">
-              <Button>注册</Button>
-            </Link>
-          </div>
+          {session?.user ? (
+            <div className="flex items-center gap-4">
+              <Link href={`/dashboard/${(session.user as any).role || 'buyer'}`}>
+                <Button variant="ghost" className="flex items-center gap-2">
+                  <User className="size-4" />
+                  {(session.user as any).companyName || session.user.email}
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center gap-4">
+              <Link href="/login">
+                <Button variant="ghost">登录</Button>
+              </Link>
+              <Link href="/register">
+                <Button>注册</Button>
+              </Link>
+            </div>
+          )}
         </div>
       </header>
 

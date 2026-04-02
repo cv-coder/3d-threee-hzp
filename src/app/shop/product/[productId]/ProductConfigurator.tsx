@@ -27,16 +27,20 @@ interface ProductConfiguratorProps {
     model_asset?: any;
   };
   modelUrl?: string;
+  savedConfig?: MaterialConfig | null;
 }
 
 export default function ProductConfigurator({
   product,
   modelUrl,
+  savedConfig,
 }: ProductConfiguratorProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const user = session?.user;
   const [config, setConfig] = useState<MaterialConfig>(() => {
+    // 如果有保存的设计方案，优先使用
+    if (savedConfig) return savedConfig;
     let raw = (product as any).material_config || product.config_defaults || {};
     if (typeof raw === 'string') {
       try { raw = JSON.parse(raw); } catch { raw = {}; }

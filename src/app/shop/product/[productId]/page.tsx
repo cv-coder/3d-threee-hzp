@@ -5,10 +5,12 @@ import ProductConfigurator from './ProductConfigurator';
 
 interface ProductPageProps {
   params: Promise<{ productId: string }>;
+  searchParams: Promise<{ designId?: string }>;
 }
 
-export default async function ProductPage({ params }: ProductPageProps) {
+export default async function ProductPage({ params, searchParams }: ProductPageProps) {
   const { productId } = await params;
+  const { designId } = await searchParams;
 
   // 获取产品信息（包含厂家信息）
   const product = await db.findOne<any>(
@@ -45,6 +47,20 @@ export default async function ProductPage({ params }: ProductPageProps) {
     [productId]
   ).catch(console.error);
 
+  // 如果有 designId，查询保存的设计方案配置
+  let savedConfig = null;
+  if (designId) {
+    const design = await db.findOne<any>(
+      `SELECT config_json FROM design_sessions WHERE id = $1`,
+      [designId]
+    );
+    if (design?.config_json) {
+      savedConfig = typeof design.config_json === 'string'
+        ? JSON.parse(design.config_json)
+        : design.config_json;
+    }
+  }
+
   // 获取模型 URL
   let modelUrl = product.model_url;
   if (!modelUrl && product.model_asset_id) {
@@ -57,6 +73,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       key={Date.now()}
       product={productWithVendor}
       modelUrl={modelUrl}
+      savedConfig={savedConfig}
     />
   );
 }

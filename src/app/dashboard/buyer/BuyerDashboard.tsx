@@ -237,9 +237,9 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                           className="flex items-center gap-4 p-4 border rounded-lg hover:border-blue-500 transition-colors"
                         >
                           <div className="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center shrink-0">
-                            {design.snapshot_url ? (
+                            {design.snapshot_url || design.product_thumbnail ? (
                               <img
-                                src={design.snapshot_url}
+                                src={design.snapshot_url || design.product_thumbnail}
                                 alt={design.session_name}
                                 className="w-full h-full object-cover rounded-lg"
                               />
@@ -252,13 +252,13 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                               {design.session_name}
                             </h4>
                             <p className="text-sm text-gray-600">
-                              {design.product?.name}
+                              {design.product_name}
                             </p>
                             <p className="text-xs text-gray-500">
                               {formatDate(design.created_at)}
                             </p>
                           </div>
-                          <Link href={`/shop/product/${design.product_id}`}>
+                          <Link href={`/shop/product/${design.product_id}?designId=${design.id}`}>
                             <Button size="sm" variant="outline">
                               <Eye className="h-4 w-4 mr-1" />
                               查看

@@ -125,6 +125,61 @@ export const POST = withAuth(
 );
 
 /**
+ * PUT /api/design/save
+ * 更新已有设计方案
+ */
+export const PUT = withAuth(
+  async (req: NextRequest, session) => {
+    try {
+      const body = await req.json();
+      const designId = body.id;
+      const configJson = typeof body.config_json === 'string'
+        ? body.config_json
+        : JSON.stringify(body.config_json);
+
+      if (!designId || !configJson) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: 'Missing required fields: id, config_json' },
+          { status: 400 }
+        );
+      }
+
+      // 验证该设计方案属于当前用户
+      const [existing] = await sql<DesignSession[]>`
+        SELECT id FROM design_sessions WHERE id = ${designId} AND buyer_id = ${session.user.id}
+      `;
+      if (!existing) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: 'Design not found or not owned by you' },
+          { status: 404 }
+        );
+      }
+
+      const [updated] = await sql<DesignSession[]>`
+        UPDATE design_sessions
+        SET config_json = ${configJson},
+            updated_at = NOW()
+        WHERE id = ${designId} AND buyer_id = ${session.user.id}
+        RETURNING *
+      `;
+
+      return NextResponse.json<ApiResponse>({
+        success: true,
+        data: updated,
+        message: 'Design updated successfully',
+      });
+    } catch (error) {
+      console.error('Update design error:', error);
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'Failed to update design' },
+        { status: 500 }
+      );
+    }
+  },
+  { requiredRoles: ['buyer', 'admin'] }
+);
+
+/**
  * GET /api/design/save
  * 获取当前用户的所有设计方案
  */

@@ -74,6 +74,7 @@ export default async function ProductPage({ params, searchParams }: ProductPageP
       product={productWithVendor}
       modelUrl={modelUrl}
       savedConfig={savedConfig}
+      designId={designId}
     />
   );
 }

@@ -28,12 +28,14 @@ interface ProductConfiguratorProps {
   };
   modelUrl?: string;
   savedConfig?: MaterialConfig | null;
+  designId?: string;
 }
 
 export default function ProductConfigurator({
   product,
   modelUrl,
   savedConfig,
+  designId,
 }: ProductConfiguratorProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -67,9 +69,10 @@ export default function ProductConfigurator({
     setSaving(true);
     try {
       const res = await fetch('/api/design/save', {
-        method: 'POST',
+        method: designId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: designId,
           product_id: product.id,
           session_name: `${product.name} - 定制方案`,
           config_json: config,
@@ -81,7 +84,7 @@ export default function ProductConfigurator({
         throw new Error('保存失败');
       }
 
-      alert('设计方案已保存！');
+      alert(designId ? '设计方案已更新！' : '设计方案已保存！');
     } catch (error) {
       console.error('Save design error:', error);
       alert('保存失败，请重试');

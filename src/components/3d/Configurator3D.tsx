@@ -6,7 +6,7 @@ import { OrbitControls, Environment, ContactShadows, Center, useGLTF } from '@re
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three-stdlib';
 import * as THREE from 'three';
-import type { MaterialConfig, ModelPart } from '@/types/database';
+import type { MaterialConfig, ModelPart, SurfaceFinishType } from '@/types/database';
 
 const LOCAL_ENVIRONMENT_MAP = '/hdr/studio_small_03_1k.hdr';
 
@@ -14,6 +14,13 @@ const LOCAL_ENVIRONMENT_MAP = '/hdr/studio_small_03_1k.hdr';
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 dracoLoader.setDecoderConfig({ type: 'js' });
+
+const SURFACE_FINISH_PRESETS: Record<SurfaceFinishType, { roughness: number; metalness: number }> = {
+  'injection-color': { roughness: 0.35, metalness: 0.05 },
+  'paint-matte': { roughness: 0.8, metalness: 0.0 },
+  'electroplated-glossy': { roughness: 0.12, metalness: 1.0 },
+  'electroplated-matte': { roughness: 0.35, metalness: 1.0 },
+};
 
 interface Model3DProps {
   modelUrl: string;
@@ -83,14 +90,22 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
 
       // 检查该部件是否有单独配置
       const partConfig = config.parts?.[mesh.name];
+      const partFinish = partConfig?.finish;
+      const globalFinish = config.surfaceFinish;
+      const activeFinish = partFinish || globalFinish;
+      const original = originalMaterials.current.get(mesh.name);
 
       if (partConfig) {
         // 应用分部位颜色
         mat.color = new THREE.Color(partConfig.color);
+        if (activeFinish) {
+          const preset = SURFACE_FINISH_PRESETS[activeFinish];
+          mat.roughness = preset.roughness;
+          mat.metalness = preset.metalness;
+        }
         mat.needsUpdate = true;
-      } else if (preserveMaterials || !config.color) {
+      } else if (preserveMaterials && !config.color && !activeFinish) {
         // 没有分部位配置且无全局颜色时，保持/还原原始材质
-        const original = originalMaterials.current.get(mesh.name);
         if (original) {
           mat.color.copy(original.color);
           mat.roughness = original.roughness;
@@ -98,8 +113,20 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
           mat.needsUpdate = true;
         }
       } else {
-        // 全局颜色
-        mat.color = new THREE.Color(config.color);
+        // 全局材质：未设置颜色时保留原始颜色
+        if (config.color) {
+          mat.color = new THREE.Color(config.color);
+        } else if (original) {
+          mat.color.copy(original.color);
+        }
+        if (activeFinish) {
+          const preset = SURFACE_FINISH_PRESETS[activeFinish];
+          mat.roughness = preset.roughness;
+          mat.metalness = preset.metalness;
+        } else if (original) {
+          mat.roughness = original.roughness;
+          mat.metalness = original.metalness;
+        }
         mat.needsUpdate = true;
       }
     });

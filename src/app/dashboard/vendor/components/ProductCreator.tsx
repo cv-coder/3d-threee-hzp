@@ -1,13 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ModelSelector from '@/components/vendor/ModelSelector';
-import type { MaterialConfig } from '@/types/database';
+import type { MaterialConfig, SurfaceFinishType, ModelPart } from '@/types/database';
+
+const Configurator3D = dynamic(
+  () => import('@/components/3d/Configurator3D'),
+  { ssr: false }
+);
+
+const SURFACE_FINISH_OPTIONS: Array<{ value: SurfaceFinishType; label: string }> = [
+  { value: 'injection-color', label: '注塑色' },
+  { value: 'paint-matte', label: '喷漆哑' },
+  { value: 'electroplated-glossy', label: '电镀亮' },
+  { value: 'electroplated-matte', label: '电镀哑' },
+];
+
+function resolveModelUrl(path?: string | null): string | null {
+  if (!path) return null;
+  if (path.startsWith('http://') || path.startsWith('https://')) return path;
+  const baseUrl = process.env.NEXT_PUBLIC_MINIO_URL || 'http://localhost:9000';
+  const normalized = path.replace(/^\/+/, '');
+  if (normalized.startsWith('3d-models/')) return `${baseUrl}/${normalized}`;
+  if (normalized.startsWith('models/')) return `${baseUrl}/3d-models/${normalized.slice('models/'.length)}`;
+  return `${baseUrl}/3d-models/${normalized}`;
+}
 
 interface ProductCreatorProps {
   vendorId: string;
@@ -30,11 +53,23 @@ export default function ProductCreator({
     model_url: '',
   });
 
-  const [materialConfig, setMaterialConfig] = useState<MaterialConfig>({
-    color: '#ffffff',
-    roughness: 0.3,
-    metalness: 0.1,
-  });
+  const [modelParts, setModelParts] = useState<ModelPart[]>([]);
+  /** key = mesh name, value = allowed finishes */
+  const [partFinishes, setPartFinishes] = useState<Record<string, SurfaceFinishType[]>>({});
+
+  const modelUrl = resolveModelUrl(formData.model_url);
+
+  const handlePartsDetected = useCallback((parts: ModelPart[]) => {
+    setModelParts(parts);
+    // 为每个检测到的部件初始化默认工艺（保留已有配置）
+    setPartFinishes((prev) => {
+      const next: Record<string, SurfaceFinishType[]> = {};
+      for (const part of parts) {
+        next[part.name] = prev[part.name] || ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte'];
+      }
+      return next;
+    });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +85,13 @@ export default function ProductCreator({
           price: parseFloat(formData.price) || null,
           moq: parseInt(formData.moq) || 1000,
           status: 'draft',
-          config_defaults: materialConfig,
+          config_defaults: (() => {
+            const config: MaterialConfig = {};
+            if (Object.keys(partFinishes).length > 0) {
+              config.partSurfaceOptions = partFinishes;
+            }
+            return config;
+          })(),
           tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
           model_url: formData.model_url || null,
         }),
@@ -73,7 +114,7 @@ export default function ProductCreator({
       <Card>
         <CardHeader>
           <CardTitle>创建新产品</CardTitle>
-          <CardDescription>填写产品信息并设置默认材质配置</CardDescription>
+          <CardDescription>填写产品信息并配置不同部件可选表面工艺</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* 基本信息 */}
@@ -145,77 +186,85 @@ export default function ProductCreator({
 
             <ModelSelector
               value={formData.model_url}
-              onChange={(url) => setFormData({ ...formData, model_url: url })}
+              onChange={(url) => {
+                setFormData({ ...formData, model_url: url });
+                // 清空旧部件数据
+                if (!url) { setModelParts([]); setPartFinishes({}); }
+              }}
               disabled={loading}
             />
-          </div>
 
-          {/* 默认材质配置 */}
-          <div className="space-y-4 pt-6 border-t">
-            <h3 className="font-semibold text-lg">默认材质配置</h3>
-            
-            <div className="grid md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="color">默认颜色</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="color"
-                    type="color"
-                    value={materialConfig.color}
-                    onChange={(e) =>
-                      setMaterialConfig({ ...materialConfig, color: e.target.value })
-                    }
-                    className="h-10 w-20"
-                  />
-                  <Input
-                    value={materialConfig.color}
-                    onChange={(e) =>
-                      setMaterialConfig({ ...materialConfig, color: e.target.value })
-                    }
-                    placeholder="#ffffff"
-                  />
+            {/* 模型预览 & 部件检测 */}
+            {modelUrl && (
+              <div className="relative rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden" style={{ height: 280 }}>
+                <Configurator3D
+                  modelUrl={modelUrl}
+                  config={{}}
+                  preserveMaterials
+                  onPartsDetected={handlePartsDetected}
+                />
+                <div className="absolute bottom-2 left-2 bg-white/90 px-2 py-1 rounded text-xs text-gray-500">
+                  模型预览 · 检测到 {modelParts.length} 个部件
                 </div>
               </div>
+            )}
+          </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="roughness">粗糙度 (0-1)</Label>
-                <Input
-                  id="roughness"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="1"
-                  value={materialConfig.roughness}
-                  onChange={(e) =>
-                    setMaterialConfig({
-                      ...materialConfig,
-                      roughness: parseFloat(e.target.value),
-                    })
-                  }
-                />
-              </div>
+          {/* 部件表面工艺配置 */}
+          <div className="space-y-4 pt-6 border-t">
+            <h3 className="font-semibold text-lg">部件可选表面工艺</h3>
 
-              <div className="space-y-2">
-                <Label htmlFor="metalness">金属度 (0-1)</Label>
-                <Input
-                  id="metalness"
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="1"
-                  value={materialConfig.metalness}
-                  onChange={(e) =>
-                    setMaterialConfig({
-                      ...materialConfig,
-                      metalness: parseFloat(e.target.value),
-                    })
-                  }
-                />
+            {modelParts.length === 0 ? (
+              <p className="text-sm text-gray-500">请先选择 3D 模型以自动检测部件</p>
+            ) : (
+              <div className="space-y-3">
+                {modelParts.map((part) => {
+                  const finishes = partFinishes[part.name] || [];
+                  return (
+                    <div key={part.name} className="rounded-lg border p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-4 h-4 rounded border shrink-0"
+                          style={{ backgroundColor: part.color }}
+                        />
+                        <span className="font-medium text-sm">{part.displayName}</span>
+                        <span className="text-xs text-gray-400">({part.name})</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {SURFACE_FINISH_OPTIONS.map((option) => {
+                          const checked = finishes.includes(option.value);
+                          return (
+                            <label
+                              key={option.value}
+                              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={(e) => {
+                                  setPartFinishes((prev) => {
+                                    const current = prev[part.name] || [];
+                                    const next = e.target.checked
+                                      ? Array.from(new Set([...current, option.value]))
+                                      : current.filter((f) => f !== option.value);
+                                    return { ...prev, [part.name]: next };
+                                  });
+                                }}
+                              />
+                              <span>{option.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </div>
+            )}
 
             <p className="text-sm text-gray-600">
-              这些配置将作为买家定制的初始值，买家可以在定制页面中修改
+              买家在产品定制页可按部件从这里配置的工艺中进行选择
             </p>
           </div>
         </CardContent>

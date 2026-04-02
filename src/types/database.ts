@@ -3,6 +3,7 @@ export type ProductStatus = 'draft' | 'published' | 'archived';
 export type AssetStatus = 'uploading' | 'processing' | 'ready' | 'failed';
 export type DesignStatus = 'draft' | 'saved' | 'submitted';
 export type InquiryStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'closed';
+export type SurfaceFinishType = 'injection-color' | 'paint-matte' | 'electroplated-glossy' | 'electroplated-matte';
 
 export interface Profile {
   id: string;
@@ -59,9 +60,13 @@ export interface MaterialConfig {
   metalness?: number;
   logoPosition?: { x: number; y: number; z: number };
   logoScale?: number;
+  /** 全局表面工艺 */
+  surfaceFinish?: SurfaceFinishType;
+  /** 部件可选表面工艺配置（由厂家定义） */
+  partSurfaceOptions?: Record<string, SurfaceFinishType[]>;
   logoUrl?: string;
   /** 分部位材质覆盖，key 为 mesh 名称 */
-  parts?: Record<string, { color: string }>;
+  parts?: Record<string, { color: string; finish?: SurfaceFinishType }>;
 }
 
 /** 模型中单个可编辑部件的描述 */

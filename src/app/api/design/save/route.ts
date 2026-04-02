@@ -11,13 +11,32 @@ import type { ApiResponse, DesignSession } from '@/lib/types';
 export const POST = withAuth(
   async (req: NextRequest, session) => {
     try {
-      const formData = await req.formData();
-      
-      const productId = formData.get('productId') as string;
-      const sessionName = formData.get('sessionName') as string;
-      const configJson = formData.get('configJson') as string;
-      const snapshotFile = formData.get('snapshot') as File | null;
-      const notes = formData.get('notes') as string;
+      const contentType = req.headers.get('content-type') || '';
+
+      let productId: string;
+      let sessionName: string;
+      let configJson: string;
+      let snapshotFile: File | null = null;
+      let notes: string;
+
+      if (contentType.includes('application/json')) {
+        // JSON 请求（前端 fetch）
+        const body = await req.json();
+        productId = body.product_id || body.productId;
+        sessionName = body.session_name || body.sessionName || '';
+        configJson = typeof body.config_json === 'string'
+          ? body.config_json
+          : JSON.stringify(body.config_json || body.configJson);
+        notes = body.notes || '';
+      } else {
+        // FormData 请求
+        const formData = await req.formData();
+        productId = formData.get('productId') as string;
+        sessionName = formData.get('sessionName') as string;
+        configJson = formData.get('configJson') as string;
+        snapshotFile = formData.get('snapshot') as File | null;
+        notes = formData.get('notes') as string;
+      }
 
       // 验证必填字段
       if (!productId || !configJson) {

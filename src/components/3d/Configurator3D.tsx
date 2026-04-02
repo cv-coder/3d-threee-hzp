@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useCallback } from 'react';
+import { Suspense, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Center, useGLTF } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -33,6 +33,10 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
   const gltf = useLoader(GLTFLoader, modelUrl, (loader) => {
     (loader as GLTFLoader).setDRACOLoader(dracoLoader);
   });
+
+  // 克隆整个 scene，避免污染 useLoader 的全局缓存
+  const clonedScene = useMemo(() => gltf.scene.clone(true), [gltf]);
+
   const meshRef = useRef<THREE.Group>(null);
   const originalMaterials = useRef<Map<string, { color: THREE.Color; roughness: number; metalness: number }>>(new Map());
   const partsReported = useRef(false);
@@ -134,7 +138,7 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
 
   return (
     <group ref={meshRef}>
-      <primitive object={gltf.scene} />
+      <primitive object={clonedScene} />
     </group>
   );
 }
@@ -216,7 +220,7 @@ export default function Configurator3D({ modelUrl, config, className = '', prese
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         shadows
-        gl={{ toneMapping: THREE.NoToneMapping }}
+        gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
         onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; }}
       >
         <Suspense fallback={null}>

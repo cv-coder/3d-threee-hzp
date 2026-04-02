@@ -29,19 +29,18 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
 
   const loadData = async () => {
     try {
-      // TODO: 创建设计和询价 API
-      // const [designsRes, inquiriesRes] = await Promise.all([
-      //   fetch('/api/design'),
-      //   fetch('/api/inquiries'),
-      // ]);
-      // if (designsRes.ok) {
-      //   const data = await designsRes.json();
-      //   setDesigns(data.designs);
-      // }
-      // if (inquiriesRes.ok) {
-      //   const data = await inquiriesRes.json();
-      //   setInquiries(data.inquiries);
-      // }
+      const [designsRes, inquiriesRes] = await Promise.all([
+        fetch('/api/design/save'),
+        fetch('/api/inquiries'),
+      ]);
+      if (designsRes.ok) {
+        const data = await designsRes.json();
+        setDesigns(data.data || []);
+      }
+      if (inquiriesRes.ok) {
+        const data = await inquiriesRes.json();
+        setInquiries(data.data || []);
+      }
     } catch (error) {
       console.error('Load data error:', error);
     } finally {

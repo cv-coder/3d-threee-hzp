@@ -54,6 +54,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   return (
     <ProductConfigurator
+      key={Date.now()}
       product={productWithVendor}
       modelUrl={modelUrl}
     />

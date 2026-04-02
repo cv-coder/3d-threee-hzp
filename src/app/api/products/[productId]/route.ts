@@ -130,7 +130,7 @@ export const PATCH = withAuth(
           price = ${nextPrice},
           moq = ${nextMoq},
           tags = ${nextTags},
-          material_config = ${nextMaterialConfig ? JSON.stringify(nextMaterialConfig) : null},
+          material_config = ${nextMaterialConfig ?? null},
           updated_at = NOW()
         WHERE id = ${productId}
         RETURNING *

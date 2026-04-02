@@ -51,7 +51,11 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
 
   // 从已有产品配置中恢复部件工艺
   const existingConfig = useMemo<MaterialConfig>(() => {
-    return (product as any).material_config || product.config_defaults || {};
+    let raw = (product as any).material_config || product.config_defaults || {};
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch { raw = {}; }
+    }
+    return raw;
   }, [product]);
 
   const [modelParts, setModelParts] = useState<ModelPart[]>([]);
@@ -66,7 +70,7 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
     setPartFinishes((prev) => {
       const next: Record<string, SurfaceFinishType[]> = {};
       for (const part of parts) {
-        next[part.name] = prev[part.name] || ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte'];
+        next[part.name] = part.name in prev ? prev[part.name] : ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte'];
       }
       return next;
     });

@@ -117,7 +117,7 @@ export const POST = withAuth(
           ${price ?? null},
           ${moq ?? 1000},
           ${tags ?? []},
-          ${config_defaults ? JSON.stringify(config_defaults) : null},
+          ${config_defaults ?? null},
           ${status ?? 'draft'}
         )
         RETURNING *

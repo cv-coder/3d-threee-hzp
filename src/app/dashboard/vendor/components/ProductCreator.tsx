@@ -65,7 +65,7 @@ export default function ProductCreator({
     setPartFinishes((prev) => {
       const next: Record<string, SurfaceFinishType[]> = {};
       for (const part of parts) {
-        next[part.name] = prev[part.name] || ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte'];
+        next[part.name] = part.name in prev ? prev[part.name] : ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte'];
       }
       return next;
     });

@@ -36,9 +36,13 @@ export default function ProductConfigurator({
   const router = useRouter();
   const { data: session, status } = useSession();
   const user = session?.user;
-  const [config, setConfig] = useState<MaterialConfig>(
-    product.config_defaults || {}
-  );
+  const [config, setConfig] = useState<MaterialConfig>(() => {
+    let raw = (product as any).material_config || product.config_defaults || {};
+    if (typeof raw === 'string') {
+      try { raw = JSON.parse(raw); } catch { raw = {}; }
+    }
+    return raw;
+  });
   const [userModified, setUserModified] = useState(false);
   const [modelParts, setModelParts] = useState<ModelPart[]>([]);
   const [saving, setSaving] = useState(false);

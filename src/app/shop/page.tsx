@@ -27,8 +27,8 @@ export default async function ShopPage() {
       <header className="bg-white border-b sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <Link href="/">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              3D包材选型系统
+            <h1 className="text-2xl font-bold text-blue-600">
+              Aether3D
             </h1>
           </Link>
           {session?.user ? (
@@ -120,7 +120,7 @@ export default async function ShopPage() {
       {/* Footer */}
       <footer className="border-t mt-24 py-8 bg-white">
         <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© 2026 3D包材选型系统. All rights reserved.</p>
+          <p>© 2026 Aether3D. All rights reserved.</p>
         </div>
       </footer>
     </div>

@@ -6,7 +6,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "3D包材选型系统",
+  title: "Aether3D",
   description: "多租户B2B 3D包材SaaS平台",
 };
 

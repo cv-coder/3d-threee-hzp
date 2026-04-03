@@ -93,7 +93,7 @@ export default function RegisterPage() {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold text-center">注册</CardTitle>
           <CardDescription className="text-center">
-            创建您的账号，开始使用3D包材选型系统
+            创建您的账号，开始使用Aether3D
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleRegister}>

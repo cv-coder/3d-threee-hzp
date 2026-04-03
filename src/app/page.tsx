@@ -29,7 +29,7 @@ export default async function Home() {
       <nav className="border-b bg-white/80 backdrop-blur-sm">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">
-            3D包材选型系统
+            Aether3D
           </h1>
           <div className="space-x-4">
             <Link href="/login">
@@ -89,7 +89,7 @@ export default async function Home() {
 
       <footer className="border-t mt-24 py-8 bg-white/50">
         <div className="container mx-auto px-4 text-center text-gray-600">
-          <p>© 2026 3D包材选型系统. All rights reserved.</p>
+          <p>© 2026 Aether3D. All rights reserved.</p>
         </div>
       </footer>
     </div>

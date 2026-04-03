@@ -214,3 +214,47 @@ export const GET = withAuth(
   },
   { requiredRoles: ['buyer', 'admin'] }
 );
+
+/**
+ * DELETE /api/design/save
+ * 删除设计方案
+ */
+export const DELETE = withAuth(
+  async (req: NextRequest, session) => {
+    try {
+      const { id } = await req.json();
+
+      if (!id) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: 'Missing required field: id' },
+          { status: 400 }
+        );
+      }
+
+      const [deleted] = await sql<DesignSession[]>`
+        DELETE FROM design_sessions
+        WHERE id = ${id} AND buyer_id = ${session.user.id}
+        RETURNING *
+      `;
+
+      if (!deleted) {
+        return NextResponse.json<ApiResponse>(
+          { success: false, error: 'Design not found or not owned by you' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json<ApiResponse>({
+        success: true,
+        message: 'Design deleted successfully',
+      });
+    } catch (error) {
+      console.error('Delete design error:', error);
+      return NextResponse.json<ApiResponse>(
+        { success: false, error: 'Failed to delete design' },
+        { status: 500 }
+      );
+    }
+  },
+  { requiredRoles: ['buyer', 'admin'] }
+);

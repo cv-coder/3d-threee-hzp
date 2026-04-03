@@ -139,10 +139,10 @@ export default function ProductConfigurator({
       {/* Header */}
       <header className="bg-white border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/shop">
+          <Link href={designId ? '/dashboard/buyer?tab=designs' : '/shop'}>
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              返回展厅
+              {designId ? '返回我的设计' : '返回展厅'}
             </Button>
           </Link>
           <Link href="/">

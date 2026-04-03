@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatDate, formatPrice } from '@/lib/utils';
-import { LogOut, Inbox, FileText, ShoppingBag, Eye } from 'lucide-react';
+import { LogOut, Inbox, FileText, ShoppingBag, Eye, Trash2 } from 'lucide-react';
 import type { Profile } from '@/types/database';
 
 interface BuyerDashboardProps {
@@ -18,7 +18,9 @@ type Tab = 'overview' | 'designs' | 'inquiries';
 
 export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const searchParams = useSearchParams();
+  const initialTab = (searchParams.get('tab') as Tab) || 'overview';
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [designs, setDesigns] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -258,12 +260,39 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                               {formatDate(design.created_at)}
                             </p>
                           </div>
-                          <Link href={`/shop/product/${design.product_id}?designId=${design.id}`}>
-                            <Button size="sm" variant="outline">
-                              <Eye className="h-4 w-4 mr-1" />
-                              查看
+                          <div className="flex items-center gap-2">
+                            <Link href={`/shop/product/${design.product_id}?designId=${design.id}`}>
+                              <Button size="sm" variant="outline">
+                                <Eye className="h-4 w-4 mr-1" />
+                                查看
+                              </Button>
+                            </Link>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                              onClick={async () => {
+                                if (!confirm('确定删除该设计方案？')) return;
+                                try {
+                                  const res = await fetch('/api/design/save', {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ id: design.id }),
+                                  });
+                                  if (res.ok) {
+                                    setDesigns(prev => prev.filter(d => d.id !== design.id));
+                                  } else {
+                                    alert('删除失败');
+                                  }
+                                } catch {
+                                  alert('删除失败');
+                                }
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1" />
+                              删除
                             </Button>
-                          </Link>
+                          </div>
                         </div>
                       ))}
                     </div>

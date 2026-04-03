@@ -3,7 +3,7 @@ export type ProductStatus = 'draft' | 'published' | 'archived';
 export type AssetStatus = 'uploading' | 'processing' | 'ready' | 'failed';
 export type DesignStatus = 'draft' | 'saved' | 'submitted';
 export type InquiryStatus = 'pending' | 'quoted' | 'accepted' | 'rejected' | 'closed';
-export type SurfaceFinishType = 'injection-color' | 'paint-matte' | 'electroplated-glossy' | 'electroplated-matte';
+export type SurfaceFinishType = 'injection-color' | 'paint-matte' | 'electroplated-glossy' | 'electroplated-matte' | 'glass';
 
 export interface Profile {
   id: string;

@@ -119,14 +119,14 @@ const ALL_FINISHES: SurfaceFinishType[] = [
   'paint-matte',
   'electroplated-glossy',
   'electroplated-matte',
+  'glass',
 ];
 
 const FINISH_LABELS: Record<SurfaceFinishType, string> = {
   'injection-color': '注塑色',
   'paint-matte': '喷漆哑',
   'electroplated-glossy': '电镀亮',
-  'electroplated-matte': '电镀哑',
-};
+  'electroplated-matte': '电镀哑',  'glass': '玻璃',};
 
 interface MaterialControlsProps {
   config: MaterialConfig;
@@ -320,25 +320,31 @@ export default function MaterialControls({ config, onChange, onReset, parts = []
         {/* 表面工艺 */}
         <div className="space-y-3 pt-1">
           <Label>表面工艺</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {availableFinishes.map((finish) => (
-              <button
-                key={finish}
-                type="button"
-                onClick={() => handleChange({ finish })}
-                className={`px-3 py-2 text-sm rounded-lg border transition-colors text-left ${
-                  currentFinish === finish
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400'
-                }`}
-                disabled={editDisabled}
-              >
-                {FINISH_LABELS[finish]}
-              </button>
-            ))}
-          </div>
-          {selectedPart && availableFinishes.length === 0 && (
-            <p className="text-xs text-amber-600">当前部位未配置可选工艺</p>
+          {needPartSelection ? (
+            <p className="text-xs text-amber-600">请先选择部位查看可选工艺</p>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2">
+                {availableFinishes.map((finish) => (
+                  <button
+                    key={finish}
+                    type="button"
+                    onClick={() => handleChange({ finish })}
+                    className={`px-3 py-2 text-sm rounded-lg border transition-colors text-left ${
+                      currentFinish === finish
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'bg-white text-gray-700 border-gray-200 hover:border-blue-400'
+                    }`}
+                    disabled={editDisabled}
+                  >
+                    {FINISH_LABELS[finish]}
+                  </button>
+                ))}
+              </div>
+              {selectedPart && availableFinishes.length === 0 && (
+                <p className="text-xs text-amber-600">当前部位未配置可选工艺</p>
+              )}
+            </>
           )}
         </div>
 

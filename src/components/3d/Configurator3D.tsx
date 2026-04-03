@@ -15,11 +15,13 @@ const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 dracoLoader.setDecoderConfig({ type: 'js' });
 
-const SURFACE_FINISH_PRESETS: Record<SurfaceFinishType, { roughness: number; metalness: number }> = {
-  'injection-color': { roughness: 0.35, metalness: 0.05 },
-  'paint-matte': { roughness: 0.8, metalness: 0.0 },
-  'electroplated-glossy': { roughness: 0.12, metalness: 1.0 },
-  'electroplated-matte': { roughness: 0.35, metalness: 1.0 },
+const SURFACE_FINISH_PRESETS: Record<SurfaceFinishType, { roughness: number; metalness: number; transparent?: boolean; opacity?: number; clearcoat?: number; clearcoatRoughness?: number; transmission?: number; thickness?: number; envMapIntensity?: number; ior?: number }> = {
+  'injection-color': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0 },
+  'paint-matte': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.5 },
+  'electroplated-glossy': { roughness: 0, metalness: 1 },
+  'electroplated-matte': { roughness: 0.3, metalness: 1 },
+  'glass': { roughness: 0, metalness: .25, transmission: 1, thickness: 1, envMapIntensity: 0.6 ,clearcoat: 0,
+        clearcoatRoughness: 0},
 };
 
 interface Model3DProps {
@@ -38,7 +40,7 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
   const clonedScene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
   const meshRef = useRef<THREE.Group>(null);
-  const originalMaterials = useRef<Map<string, { color: THREE.Color; roughness: number; metalness: number }>>(new Map());
+  const originalMaterials = useRef<Map<string, { color: THREE.Color; roughness: number; metalness: number; transparent: boolean; opacity: number; clearcoat: number; clearcoatRoughness: number }>>(new Map());
   const partsReported = useRef(false);
 
   // 首次挂载时克隆材质（解除共享）、保存原始属性并上报部件列表
@@ -58,20 +60,34 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
         meshIndex++;
 
         if (!originalMaterials.current.has(mesh.name)) {
-          // 克隆材质，确保每个 mesh 拥有独立实例，互不干扰
-          const cloned = (mesh.material as THREE.MeshStandardMaterial).clone();
-          mesh.material = cloned;
+          // 转为 MeshPhysicalMaterial 以支持 clearcoat 等高级属性
+          const srcMat = mesh.material as THREE.MeshStandardMaterial;
+          const physical = new THREE.MeshPhysicalMaterial({
+            color: srcMat.color?.clone?.() ?? new THREE.Color(0xffffff),
+            roughness: srcMat.roughness ?? 0.5,
+            metalness: srcMat.metalness ?? 0,
+            transparent: srcMat.transparent ?? false,
+            opacity: srcMat.opacity ?? 1,
+            map: srcMat.map ?? null,
+            normalMap: srcMat.normalMap ?? null,
+            side: srcMat.side ?? THREE.FrontSide,
+          });
+          mesh.material = physical;
 
           originalMaterials.current.set(mesh.name, {
-            color: cloned.color.clone(),
-            roughness: cloned.roughness,
-            metalness: cloned.metalness,
+            color: physical.color.clone(),
+            roughness: physical.roughness,
+            metalness: physical.metalness,
+            transparent: physical.transparent,
+            opacity: physical.opacity,
+            clearcoat: physical.clearcoat,
+            clearcoatRoughness: physical.clearcoatRoughness,
           });
 
           parts.push({
             name: mesh.name,
             displayName: mesh.name.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-            color: '#' + cloned.color.getHexString(),
+            color: '#' + physical.color.getHexString(),
           });
         }
       }
@@ -90,7 +106,47 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
       if (!(child as THREE.Mesh).isMesh) return;
       const mesh = child as THREE.Mesh;
       if (!mesh.material) return;
-      const mat = mesh.material as THREE.MeshStandardMaterial;
+      const mat = mesh.material as THREE.MeshPhysicalMaterial;
+
+      const applyPreset = (preset: typeof SURFACE_FINISH_PRESETS[SurfaceFinishType]) => {
+        mat.roughness = preset.roughness;
+        mat.metalness = preset.metalness;
+        mat.transparent = !!preset.transparent;
+        mat.opacity = preset.opacity ?? 1;
+        mat.clearcoat = preset.clearcoat ?? 0;
+        mat.clearcoatRoughness = preset.clearcoatRoughness ?? 0;
+        mat.transmission = preset.transmission ?? 0;
+        mat.thickness = preset.thickness ?? 0;
+        mat.ior = preset.ior ?? 1.5;
+        mat.envMapIntensity = preset.envMapIntensity ?? 1;
+        mat.side = preset.transmission ? THREE.DoubleSide : THREE.FrontSide;
+      };
+
+      const resetPhysical = () => {
+        mat.transparent = false;
+        mat.opacity = 1;
+        mat.clearcoat = 0;
+        mat.clearcoatRoughness = 0;
+        mat.transmission = 0;
+        mat.thickness = 0;
+        mat.ior = 1.5;
+        mat.envMapIntensity = 1;
+        mat.side = THREE.FrontSide;
+      };
+
+      const restoreOriginal = (orig: NonNullable<typeof original>) => {
+        mat.roughness = orig.roughness;
+        mat.metalness = orig.metalness;
+        mat.transparent = orig.transparent;
+        mat.opacity = orig.opacity;
+        mat.clearcoat = orig.clearcoat;
+        mat.clearcoatRoughness = orig.clearcoatRoughness;
+        mat.transmission = 0;
+        mat.thickness = 0;
+        mat.ior = 1.5;
+        mat.envMapIntensity = 1;
+        mat.side = THREE.FrontSide;
+      };
 
       // 检查该部件是否有单独配置
       const partConfig = config.parts?.[mesh.name];
@@ -100,36 +156,29 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
       const original = originalMaterials.current.get(mesh.name);
 
       if (partConfig) {
-        // 应用分部位颜色
         mat.color = new THREE.Color(partConfig.color);
         if (activeFinish) {
-          const preset = SURFACE_FINISH_PRESETS[activeFinish];
-          mat.roughness = preset.roughness;
-          mat.metalness = preset.metalness;
+          applyPreset(SURFACE_FINISH_PRESETS[activeFinish]);
+        } else {
+          resetPhysical();
         }
         mat.needsUpdate = true;
       } else if (preserveMaterials && !config.color && !activeFinish) {
-        // 没有分部位配置且无全局颜色时，保持/还原原始材质
         if (original) {
           mat.color.copy(original.color);
-          mat.roughness = original.roughness;
-          mat.metalness = original.metalness;
+          restoreOriginal(original);
           mat.needsUpdate = true;
         }
       } else {
-        // 全局材质：未设置颜色时保留原始颜色
         if (config.color) {
           mat.color = new THREE.Color(config.color);
         } else if (original) {
           mat.color.copy(original.color);
         }
         if (activeFinish) {
-          const preset = SURFACE_FINISH_PRESETS[activeFinish];
-          mat.roughness = preset.roughness;
-          mat.metalness = preset.metalness;
+          applyPreset(SURFACE_FINISH_PRESETS[activeFinish]);
         } else if (original) {
-          mat.roughness = original.roughness;
-          mat.metalness = original.metalness;
+          restoreOriginal(original);
         }
         mat.needsUpdate = true;
       }
@@ -189,11 +238,13 @@ function SceneContent({ modelUrl, config, preserveMaterials, onPartsDetected }: 
 
   return (
     <>
-      {/* 匹配 Three.js Editor 默认灯光 */}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[12, 2, 3]} intensity={1.0} castShadow />
-      <hemisphereLight args={[0xffffff, 0x444444, 0.4]} />
-      <Environment files={LOCAL_ENVIRONMENT_MAP} background={false} />
+      {/* 仅 HDR 环境光照明，降低强度防止过曝 */}
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[5, 8, 5]} intensity={0.7} />
+      <directionalLight position={[-8, 5, 3]} intensity={0.5} />
+      <directionalLight position={[-6, 2, 6]} intensity={0.4} />
+      <directionalLight position={[0, 3, 8]} intensity={0.5} />
+      <Environment files={LOCAL_ENVIRONMENT_MAP} background={false} environmentIntensity={0.3} />
 
       {/* 3D模型 - 自动居中 */}
       <group ref={groupRef}>
@@ -220,7 +271,7 @@ export default function Configurator3D({ modelUrl, config, className = '', prese
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         shadows
-        gl={{ toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
+        gl={{ toneMapping: THREE.LinearToneMapping, toneMappingExposure: 1 }}
         onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; }}
       >
         <Suspense fallback={null}>

@@ -19,8 +19,7 @@ const SURFACE_FINISH_OPTIONS: Array<{ value: SurfaceFinishType; label: string }>
   { value: 'injection-color', label: '注塑色' },
   { value: 'paint-matte', label: '喷漆哑' },
   { value: 'electroplated-glossy', label: '电镀亮' },
-  { value: 'electroplated-matte', label: '电镀哑' },
-];
+  { value: 'electroplated-matte', label: '电镀哑' },  { value: 'glass', label: '玻璃' },];
 
 function resolveModelUrl(path?: string | null): string | null {
   if (!path) return null;
@@ -70,7 +69,7 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
     setPartFinishes((prev) => {
       const next: Record<string, SurfaceFinishType[]> = {};
       for (const part of parts) {
-        next[part.name] = part.name in prev ? prev[part.name] : ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte'];
+        next[part.name] = part.name in prev ? prev[part.name] : ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte', 'glass'];
       }
       return next;
     });

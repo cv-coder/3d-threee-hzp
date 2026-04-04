@@ -83,6 +83,17 @@ export default async function ShopPage() {
                     <CardDescription className="line-clamp-2">
                       {product.description || '暂无描述'}
                     </CardDescription>
+                    <div className="flex flex-wrap gap-2 text-xs text-gray-600">
+                      {product.accessory_category && (
+                        <span className="rounded-full bg-gray-100 px-2.5 py-1">{product.accessory_category}</span>
+                      )}
+                      {product.capacity && (
+                        <span className="rounded-full bg-gray-100 px-2.5 py-1">{product.capacity}</span>
+                      )}
+                      {product.material && (
+                        <span className="rounded-full bg-gray-100 px-2.5 py-1">{product.material}</span>
+                      )}
+                    </div>
                     <div className="text-sm text-gray-600 mt-1">
                       厂家：{product.vendor_company_name || product.vendor_email}
                     </div>

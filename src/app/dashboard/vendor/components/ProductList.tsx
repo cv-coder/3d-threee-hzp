@@ -162,6 +162,18 @@ export default function ProductList({ products, onUpdate, onEdit }: ProductListP
                   </div>
                 </div>
 
+                <div className="mt-4 flex flex-wrap gap-2 text-sm text-gray-600">
+                  {product.accessory_category && (
+                    <span className="rounded-full bg-gray-100 px-3 py-1">分类：{product.accessory_category}</span>
+                  )}
+                  {product.capacity && (
+                    <span className="rounded-full bg-gray-100 px-3 py-1">容量：{product.capacity}</span>
+                  )}
+                  {product.material && (
+                    <span className="rounded-full bg-gray-100 px-3 py-1">材料：{product.material}</span>
+                  )}
+                </div>
+
                 <div className="mt-4 flex gap-2">
                   <Button
                     size="sm"

@@ -42,6 +42,9 @@ CREATE TABLE products (
     vendor_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
+    accessory_category VARCHAR(255),
+    capacity VARCHAR(100),
+    material VARCHAR(255),
     model_url TEXT,            -- MinIO 中的 3D 模型路径（可后续上传）
     thumbnail_url TEXT,
     price DECIMAL(10, 2),
@@ -60,6 +63,17 @@ CREATE TABLE products (
 CREATE INDEX idx_products_vendor ON products(vendor_id);
 CREATE INDEX idx_products_status ON products(status);
 CREATE INDEX idx_products_tags ON products USING GIN(tags);
+
+-- 配件分类表（管理员后台可维护）
+CREATE TABLE accessory_categories (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) UNIQUE NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_accessory_categories_sort_order ON accessory_categories(sort_order, created_at);
 
 -- 模型资产表（厂家上传的 3D 模型）
 CREATE TABLE model_assets (
@@ -186,6 +200,10 @@ CREATE TRIGGER update_orders_updated_at
     BEFORE UPDATE ON orders 
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+CREATE TRIGGER update_accessory_categories_updated_at
+    BEFORE UPDATE ON accessory_categories
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
 -- ================================================
 -- 初始数据 (可选)
 -- ================================================
@@ -222,6 +240,37 @@ VALUES (
     TRUE,
     NOW()
 );
+
+INSERT INTO accessory_categories (name, sort_order)
+VALUES
+    ('窄口瓶', 1),
+    ('泵头', 2),
+    ('盖子', 3),
+    ('滴管', 4),
+    ('广口瓶', 5),
+    ('软包装', 6),
+    ('软管', 7),
+    ('香水瓶', 8),
+    ('香水中套', 9),
+    ('香水盖子', 10),
+    ('口红管', 11),
+    ('眼影盒', 12),
+    ('粉盒', 13),
+    ('睫毛膏管', 14),
+    ('气垫', 15),
+    ('遮瑕棒', 16),
+    ('眼线笔', 17),
+    ('眉笔', 18),
+    ('眉蜡管', 19),
+    ('眉胶管', 20),
+    ('粉扑', 21),
+    ('化妆刷', 22),
+    ('滚珠瓶', 23),
+    ('卧蚕笔', 24),
+    ('修容笔', 25),
+    ('针管', 26),
+    ('安培瓶', 27)
+ON CONFLICT (name) DO NOTHING;
 
 -- ================================================
 -- 视图和辅助查询 (可选)

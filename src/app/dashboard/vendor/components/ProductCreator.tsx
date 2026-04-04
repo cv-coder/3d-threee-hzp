@@ -1,14 +1,16 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ModelSelector from '@/components/vendor/ModelSelector';
-import type { MaterialConfig, SurfaceFinishType, ModelPart } from '@/types/database';
+import { ACCESSORY_CATEGORY_OPTIONS } from '@/lib/product-options';
+import type { AccessoryCategory, MaterialConfig, ModelPart, SurfaceFinishType } from '@/types/database';
 
 const Configurator3D = dynamic(
   () => import('@/components/3d/Configurator3D'),
@@ -19,7 +21,9 @@ const SURFACE_FINISH_OPTIONS: Array<{ value: SurfaceFinishType; label: string }>
   { value: 'injection-color', label: '注塑色' },
   { value: 'paint-matte', label: '喷漆哑' },
   { value: 'electroplated-glossy', label: '电镀亮' },
-  { value: 'electroplated-matte', label: '电镀哑' },  { value: 'glass', label: '玻璃' },];
+  { value: 'electroplated-matte', label: '电镀哑' },
+  { value: 'glass', label: '玻璃' },
+];
 
 function resolveModelUrl(path?: string | null): string | null {
   if (!path) return null;
@@ -43,28 +47,59 @@ export default function ProductCreator({
   onCancel,
 }: ProductCreatorProps) {
   const [loading, setLoading] = useState(false);
+  const [accessoryCategories, setAccessoryCategories] = useState<string[]>([...ACCESSORY_CATEGORY_OPTIONS]);
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    accessory_category: '',
+    capacity: '',
+    material: '',
     price: '',
     moq: '1000',
     tags: '',
     model_url: '',
   });
-
   const [modelParts, setModelParts] = useState<ModelPart[]>([]);
-  /** key = mesh name, value = allowed finishes */
   const [partFinishes, setPartFinishes] = useState<Record<string, SurfaceFinishType[]>>({});
 
   const modelUrl = resolveModelUrl(formData.model_url);
 
+  useEffect(() => {
+    let active = true;
+
+    const loadAccessoryCategories = async () => {
+      try {
+        const res = await fetch('/api/accessory-categories');
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const names = (data?.data?.categories || [])
+          .map((category: AccessoryCategory) => category.name)
+          .filter(Boolean);
+
+        if (active && names.length > 0) {
+          setAccessoryCategories(names);
+        }
+      } catch (error) {
+        console.error('Load accessory categories error:', error);
+      }
+    };
+
+    loadAccessoryCategories();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const handlePartsDetected = useCallback((parts: ModelPart[]) => {
     setModelParts(parts);
-    // 为每个检测到的部件初始化默认工艺（保留已有配置）
     setPartFinishes((prev) => {
       const next: Record<string, SurfaceFinishType[]> = {};
       for (const part of parts) {
-        next[part.name] = part.name in prev ? prev[part.name] : ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte', 'glass'];
+        next[part.name] = part.name in prev
+          ? prev[part.name]
+          : ['injection-color', 'paint-matte', 'electroplated-glossy', 'electroplated-matte', 'glass'];
       }
       return next;
     });
@@ -81,8 +116,11 @@ export default function ProductCreator({
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
+          accessory_category: formData.accessory_category || null,
+          capacity: formData.capacity || null,
+          material: formData.material || null,
           price: parseFloat(formData.price) || null,
-          moq: parseInt(formData.moq) || 1000,
+          moq: parseInt(formData.moq, 10) || 1000,
           status: 'draft',
           config_defaults: (() => {
             const config: MaterialConfig = {};
@@ -91,12 +129,15 @@ export default function ProductCreator({
             }
             return config;
           })(),
-          tags: formData.tags ? formData.tags.split(',').map(t => t.trim()) : [],
+          tags: formData.tags ? formData.tags.split(',').map((tag) => tag.trim()) : [],
           model_url: formData.model_url || null,
+          vendorId,
         }),
       });
 
-      if (!res.ok) throw new Error('创建失败');
+      if (!res.ok) {
+        throw new Error('创建失败');
+      }
 
       alert('产品创建成功！');
       onSuccess();
@@ -116,10 +157,9 @@ export default function ProductCreator({
           <CardDescription>填写产品信息并配置不同部件可选表面工艺</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* 基本信息 */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-lg">基本信息</h3>
-            
+            <h3 className="text-lg font-semibold">基本信息</h3>
+
             <div className="space-y-2">
               <Label htmlFor="name">产品名称 *</Label>
               <Input
@@ -142,13 +182,54 @@ export default function ProductCreator({
               />
             </div>
 
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="accessory_category">配件分类</Label>
+                <Select
+                  value={formData.accessory_category}
+                  onValueChange={(value) => setFormData({ ...formData, accessory_category: value })}
+                >
+                  <SelectTrigger id="accessory_category">
+                    <SelectValue placeholder="请选择配件分类" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {accessoryCategories.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="capacity">容量</Label>
+                <Input
+                  id="capacity"
+                  value={formData.capacity}
+                  onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                  placeholder="例如：500ml"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="material">材料</Label>
+                <Input
+                  id="material"
+                  value={formData.material}
+                  onChange={(e) => setFormData({ ...formData, material: e.target.value })}
+                  placeholder="例如：PET、PP、玻璃"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <p className="text-sm text-gray-600">
                 上传模型后可在产品编辑中补充或替换模型文件
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="price">单价 (¥)</Label>
                 <Input
@@ -187,31 +268,31 @@ export default function ProductCreator({
               value={formData.model_url}
               onChange={(url) => {
                 setFormData({ ...formData, model_url: url });
-                // 清空旧部件数据
-                if (!url) { setModelParts([]); setPartFinishes({}); }
+                if (!url) {
+                  setModelParts([]);
+                  setPartFinishes({});
+                }
               }}
               disabled={loading}
             />
 
-            {/* 模型预览 & 部件检测 */}
             {modelUrl && (
-              <div className="relative rounded-lg bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden" style={{ height: 280 }}>
+              <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-gray-100 to-gray-200" style={{ height: 280 }}>
                 <Configurator3D
                   modelUrl={modelUrl}
                   config={{}}
                   preserveMaterials
                   onPartsDetected={handlePartsDetected}
                 />
-                <div className="absolute bottom-2 left-2 bg-white/90 px-2 py-1 rounded text-xs text-gray-500">
+                <div className="absolute bottom-2 left-2 rounded bg-white/90 px-2 py-1 text-xs text-gray-500">
                   模型预览 · 检测到 {modelParts.length} 个部件
                 </div>
               </div>
             )}
           </div>
 
-          {/* 部件表面工艺配置 */}
-          <div className="space-y-4 pt-6 border-t">
-            <h3 className="font-semibold text-lg">部件可选表面工艺</h3>
+          <div className="space-y-4 border-t pt-6">
+            <h3 className="text-lg font-semibold">部件可选表面工艺</h3>
 
             {modelParts.length === 0 ? (
               <p className="text-sm text-gray-500">请先选择 3D 模型以自动检测部件</p>
@@ -220,23 +301,20 @@ export default function ProductCreator({
                 {modelParts.map((part) => {
                   const finishes = partFinishes[part.name] || [];
                   return (
-                    <div key={part.name} className="rounded-lg border p-4 space-y-3">
+                    <div key={part.name} className="space-y-3 rounded-lg border p-4">
                       <div className="flex items-center gap-3">
-                        <div
-                          className="w-4 h-4 rounded border shrink-0"
-                          style={{ backgroundColor: part.color }}
-                        />
-                        <span className="font-medium text-sm">{part.displayName}</span>
+                        <div className="h-4 w-4 shrink-0 rounded border" style={{ backgroundColor: part.color }} />
+                        <span className="text-sm font-medium">{part.displayName}</span>
                         <span className="text-xs text-gray-400">({part.name})</span>
                       </div>
 
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
                         {SURFACE_FINISH_OPTIONS.map((option) => {
                           const checked = finishes.includes(option.value);
                           return (
                             <label
                               key={option.value}
-                              className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm cursor-pointer"
+                              className="flex cursor-pointer items-center gap-2 rounded-md border px-3 py-2 text-sm"
                             >
                               <input
                                 type="checkbox"
@@ -246,7 +324,7 @@ export default function ProductCreator({
                                     const current = prev[part.name] || [];
                                     const next = e.target.checked
                                       ? Array.from(new Set([...current, option.value]))
-                                      : current.filter((f) => f !== option.value);
+                                      : current.filter((finish) => finish !== option.value);
                                     return { ...prev, [part.name]: next };
                                   });
                                 }}
@@ -269,7 +347,7 @@ export default function ProductCreator({
         </CardContent>
       </Card>
 
-      <div className="flex gap-4 justify-end">
+      <div className="flex justify-end gap-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           取消
         </Button>

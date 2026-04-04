@@ -1,14 +1,16 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import ModelSelector from '@/components/vendor/ModelSelector';
-import type { MaterialConfig, Product, SurfaceFinishType, ModelPart } from '@/types/database';
+import { ACCESSORY_CATEGORY_OPTIONS } from '@/lib/product-options';
+import type { AccessoryCategory, MaterialConfig, Product, SurfaceFinishType, ModelPart } from '@/types/database';
 
 const Configurator3D = dynamic(
   () => import('@/components/3d/Configurator3D'),
@@ -19,7 +21,9 @@ const SURFACE_FINISH_OPTIONS: Array<{ value: SurfaceFinishType; label: string }>
   { value: 'injection-color', label: '注塑色' },
   { value: 'paint-matte', label: '喷漆哑' },
   { value: 'electroplated-glossy', label: '电镀亮' },
-  { value: 'electroplated-matte', label: '电镀哑' },  { value: 'glass', label: '玻璃' },];
+  { value: 'electroplated-matte', label: '电镀哑' },
+  { value: 'glass', label: '玻璃' },
+];
 
 function resolveModelUrl(path?: string | null): string | null {
   if (!path) return null;
@@ -39,9 +43,16 @@ interface ProductEditorProps {
 
 export default function ProductEditor({ product, onSuccess, onCancel }: ProductEditorProps) {
   const [loading, setLoading] = useState(false);
+  const [accessoryCategories, setAccessoryCategories] = useState<string[]>([...ACCESSORY_CATEGORY_OPTIONS]);
+  const hasCustomAccessoryCategory = Boolean(
+    product.accessory_category && !accessoryCategories.includes(product.accessory_category)
+  );
   const [formData, setFormData] = useState({
     name: product.name || '',
     description: product.description || '',
+    accessory_category: product.accessory_category || '',
+    capacity: product.capacity || '',
+    material: product.material || '',
     price: product.price?.toString() || '',
     moq: product.moq?.toString() || '1000',
     tags: (product.tags || []).join(','),
@@ -63,6 +74,31 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
   );
 
   const modelUrl = resolveModelUrl(formData.model_url);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAccessoryCategories = async () => {
+      try {
+        const res = await fetch('/api/accessory-categories');
+        if (!res.ok) return;
+
+        const data = await res.json();
+        const names = (data?.data?.categories || []).map((category: AccessoryCategory) => category.name).filter(Boolean);
+        if (active && names.length > 0) {
+          setAccessoryCategories(names);
+        }
+      } catch (error) {
+        console.error('Load accessory categories error:', error);
+      }
+    };
+
+    loadAccessoryCategories();
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const handlePartsDetected = useCallback((parts: ModelPart[]) => {
     setModelParts(parts);
@@ -86,6 +122,9 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
         body: JSON.stringify({
           name: formData.name,
           description: formData.description,
+          accessory_category: formData.accessory_category || null,
+          capacity: formData.capacity || null,
+          material: formData.material || null,
           price: formData.price ? parseFloat(formData.price) : null,
           moq: parseInt(formData.moq) || 1000,
           tags: formData.tags ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
@@ -146,6 +185,50 @@ export default function ProductEditor({ product, onSuccess, onCancel }: ProductE
                 placeholder="详细描述产品特点、用途等..."
                 rows={4}
               />
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="accessory_category">配件分类</Label>
+                <Select
+                  value={formData.accessory_category}
+                  onValueChange={(value) => setFormData({ ...formData, accessory_category: value })}
+                >
+                  <SelectTrigger id="accessory_category">
+                    <SelectValue placeholder="请选择配件分类" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {hasCustomAccessoryCategory && product.accessory_category && (
+                      <SelectItem value={product.accessory_category}>{product.accessory_category}</SelectItem>
+                    )}
+                    {accessoryCategories.map((option) => (
+                      <SelectItem key={option} value={option}>
+                        {option}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="capacity">容量</Label>
+                <Input
+                  id="capacity"
+                  value={formData.capacity}
+                  onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                  placeholder="例如：500ml"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="material">材料</Label>
+                <Input
+                  id="material"
+                  value={formData.material}
+                  onChange={(e) => setFormData({ ...formData, material: e.target.value })}
+                  placeholder="例如：PET、PP、玻璃"
+                />
+              </div>
             </div>
 
             <div className="grid md:grid-cols-2 gap-4">

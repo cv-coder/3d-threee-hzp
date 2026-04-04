@@ -46,6 +46,9 @@ export interface Product {
   vendor_id: string;
   name: string;
   description?: string;
+  accessory_category?: string;
+  capacity?: string;
+  material?: string;
   model_url: string;
   thumbnail_url?: string;
   price?: number;
@@ -59,6 +62,14 @@ export interface Product {
 
 export interface ProductWithVendor extends Product {
   vendor?: ProfilePublic;
+}
+
+export interface AccessoryCategory {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at: Date;
+  updated_at: Date;
 }
 
 // ================================================
@@ -186,6 +197,9 @@ export interface RegisterFormData {
 export interface ProductFormData {
   name: string;
   description?: string;
+  accessory_category?: string;
+  capacity?: string;
+  material?: string;
   price?: number;
   moq: number;
   tags?: string[];

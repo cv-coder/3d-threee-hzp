@@ -38,6 +38,9 @@ export interface Product {
   vendor_id: string;
   name: string;
   description?: string;
+  accessory_category?: string;
+  capacity?: string;
+  material?: string;
   model_asset_id?: string;
   model_url?: string;
   thumbnail_url?: string;
@@ -52,6 +55,14 @@ export interface Product {
   // 关联数据
   vendor?: Profile;
   model_asset?: Asset;
+}
+
+export interface AccessoryCategory {
+  id: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface MaterialConfig {

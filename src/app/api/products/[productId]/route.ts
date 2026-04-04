@@ -30,6 +30,9 @@ export const PATCH = withAuth(
         status,
         name,
         description,
+        accessory_category,
+        capacity,
+        material,
         model_url,
         price,
         moq,
@@ -39,6 +42,9 @@ export const PATCH = withAuth(
         status?: string;
         name?: string;
         description?: string | null;
+        accessory_category?: string | null;
+        capacity?: string | null;
+        material?: string | null;
         model_url?: string | null;
         price?: number | null;
         moq?: number;
@@ -70,6 +76,9 @@ export const PATCH = withAuth(
         status === undefined &&
         name === undefined &&
         description === undefined &&
+        accessory_category === undefined &&
+        capacity === undefined &&
+        material === undefined &&
         model_url === undefined &&
         price === undefined &&
         moq === undefined &&
@@ -113,6 +122,15 @@ export const PATCH = withAuth(
       const nextStatus = status ?? existing.status;
       const nextName = name !== undefined ? String(name).trim() : existing.name;
       const nextDescription = description !== undefined ? description : (existing.description ?? null);
+      const nextAccessoryCategory = accessory_category !== undefined
+        ? (accessory_category ? String(accessory_category).trim() : null)
+        : (existing.accessory_category ?? null);
+      const nextCapacity = capacity !== undefined
+        ? (capacity ? String(capacity).trim() : null)
+        : (existing.capacity ?? null);
+      const nextMaterial = material !== undefined
+        ? (material ? String(material).trim() : null)
+        : (existing.material ?? null);
       const nextModelUrl = model_url !== undefined ? model_url : (existing.model_url ?? null);
       const nextPrice = price !== undefined ? price : (existing.price ?? null);
       const nextMoq = moq !== undefined ? moq : existing.moq;
@@ -126,6 +144,9 @@ export const PATCH = withAuth(
           status = ${nextStatus},
           name = ${nextName},
           description = ${nextDescription},
+          accessory_category = ${nextAccessoryCategory},
+          capacity = ${nextCapacity},
+          material = ${nextMaterial},
           model_url = ${nextModelUrl},
           price = ${nextPrice},
           moq = ${nextMoq},

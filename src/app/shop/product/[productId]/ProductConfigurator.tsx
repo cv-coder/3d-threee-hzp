@@ -242,6 +242,20 @@ export default function ProductConfigurator({
                 <p className="text-gray-700 whitespace-pre-line">
                   {product.description || '暂无详细描述'}
                 </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-lg bg-gray-50 px-4 py-3">
+                    <div className="text-xs text-gray-500">配件分类</div>
+                    <div className="mt-1 font-medium text-gray-900">{product.accessory_category || '未填写'}</div>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 px-4 py-3">
+                    <div className="text-xs text-gray-500">容量</div>
+                    <div className="mt-1 font-medium text-gray-900">{product.capacity || '未填写'}</div>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 px-4 py-3">
+                    <div className="text-xs text-gray-500">材料</div>
+                    <div className="mt-1 font-medium text-gray-900">{product.material || '未填写'}</div>
+                  </div>
+                </div>
                 {product.tags && product.tags.length > 0 && (
                   <div className="mt-4 flex flex-wrap gap-2">
                     {product.tags.map((tag, index) => (

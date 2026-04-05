@@ -24,6 +24,7 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
   const [designs, setDesigns] = useState<any[]>([]);
   const [inquiries, setInquiries] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadData();
@@ -144,6 +145,15 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
 
           {/* Main Content */}
           <main className="flex-1">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center space-y-3">
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+                  <p className="text-sm text-gray-500">加载中...</p>
+                </div>
+              </div>
+            ) : (
+            <>
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div className="grid md:grid-cols-3 gap-6">
@@ -271,8 +281,10 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                               size="sm"
                               variant="outline"
                               className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                              disabled={deletingId === design.id}
                               onClick={async () => {
                                 if (!confirm('确定删除该设计方案？')) return;
+                                setDeletingId(design.id);
                                 try {
                                   const res = await fetch('/api/design/save', {
                                     method: 'DELETE',
@@ -286,11 +298,13 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                                   }
                                 } catch {
                                   alert('删除失败');
+                                } finally {
+                                  setDeletingId(null);
                                 }
                               }}
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
-                              删除
+                              {deletingId === design.id ? '删除中...' : '删除'}
                             </Button>
                           </div>
                         </div>
@@ -382,6 +396,8 @@ export default function BuyerDashboard({ profile }: BuyerDashboardProps) {
                   )}
                 </CardContent>
               </Card>
+            )}
+            </>
             )}
           </main>
         </div>

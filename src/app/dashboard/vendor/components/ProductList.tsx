@@ -181,7 +181,9 @@ export default function ProductList({ products, onUpdate, onEdit }: ProductListP
                     onClick={() => toggleProductStatus(product.id, product.status)}
                     disabled={loading === product.id}
                   >
-                    {product.status === 'published' ? (
+                    {loading === product.id ? (
+                      '处理中...'
+                    ) : product.status === 'published' ? (
                       <>
                         <ToggleRight className="h-4 w-4 mr-1" />
                         下架
@@ -216,7 +218,7 @@ export default function ProductList({ products, onUpdate, onEdit }: ProductListP
                     disabled={loading === product.id}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    删除
+                    {loading === product.id ? '删除中...' : '删除'}
                   </Button>
                 </div>
               </div>

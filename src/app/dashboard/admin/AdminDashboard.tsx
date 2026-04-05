@@ -293,6 +293,15 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
         </header>
 
         <main className="px-6 py-6 space-y-6">
+          {loading ? (
+            <div className="flex items-center justify-center py-20">
+              <div className="text-center space-y-3">
+                <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+                <p className="text-sm text-gray-500">加载中...</p>
+              </div>
+            </div>
+          ) : (
+          <>
           {/* ===== 数据概览 ===== */}
           {activeTab === 'overview' && (
             <>
@@ -411,14 +420,14 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
                       disabled={workingId === vendor.id}
                       onClick={() => updateVerifyStatus(vendor, false)}
                     >
-                      取消认证
+                      {workingId === vendor.id ? '处理中...' : '取消认证'}
                     </Button>
                   ) : (
                     <Button
                       disabled={workingId === vendor.id}
                       onClick={() => updateVerifyStatus(vendor, true)}
                     >
-                      通过认证
+                      {workingId === vendor.id ? '处理中...' : '通过认证'}
                     </Button>
                   )}
                 </div>
@@ -473,7 +482,7 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
                       }}
                       disabled={categoryLoading}
                     >
-                      确定
+                      {categoryLoading ? '提交中...' : '确定'}
                     </Button>
                   </div>
                 </div>
@@ -552,6 +561,8 @@ export default function AdminDashboard({ profile }: AdminDashboardProps) {
             )}
           </CardContent>
         </Card>
+          )}
+          </>
           )}
         </main>
       </div>

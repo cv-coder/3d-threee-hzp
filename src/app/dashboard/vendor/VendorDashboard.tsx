@@ -117,6 +117,15 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
 
           {/* Main Content */}
           <main className="flex-1">
+            {loading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center space-y-3">
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600" />
+                  <p className="text-sm text-gray-500">加载中...</p>
+                </div>
+              </div>
+            ) : (
+            <>
             {activeTab === 'overview' && (
               <div className="space-y-6">
                 <div className="grid md:grid-cols-3 gap-6">
@@ -251,6 +260,8 @@ export default function VendorDashboard({ profile }: VendorDashboardProps) {
                   setActiveTab('products');
                 }}
               />
+            )}
+            </>
             )}
           </main>
         </div>

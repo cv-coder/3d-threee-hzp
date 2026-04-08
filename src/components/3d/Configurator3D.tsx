@@ -16,12 +16,12 @@ dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5
 dracoLoader.setDecoderConfig({ type: 'js' });
 
 const SURFACE_FINISH_PRESETS: Record<SurfaceFinishType, { roughness: number; metalness: number; transparent?: boolean; opacity?: number; clearcoat?: number; clearcoatRoughness?: number; transmission?: number; thickness?: number; envMapIntensity?: number; ior?: number }> = {
-  'injection-color': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0 },
-  'paint-matte': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.5 },
-  'electroplated-glossy': { roughness: 0, metalness: 1 },
-  'electroplated-matte': { roughness: 0.3, metalness: 1 },
-  'glass': { roughness: 0, metalness: .25, transmission: 1, thickness: 1, envMapIntensity: 0.6 ,clearcoat: 0,
-        clearcoatRoughness: 0},
+  'injection-color': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0, envMapIntensity: 1,transmission: 0 },  //注塑色
+  'paint-matte': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.5 }, //喷漆哑光
+  'electroplated-glossy': { roughness: 0.08, metalness: 1, envMapIntensity: 1,transmission: 0 }, //电镀亮面
+  'electroplated-matte': { roughness: 0.3, metalness: 1,clearcoat: 0,clearcoatRoughness: 0,envMapIntensity: 0.9,transmission: 0 }, //电镀哑光
+  'glass': { roughness: 0, metalness: .25, transmission: 1, thickness: 2, envMapIntensity: 4, clearcoat: 0,
+        clearcoatRoughness: 0 ,ior: 1.5}, //玻璃
 };
 
 interface Model3DProps {
@@ -239,12 +239,12 @@ function SceneContent({ modelUrl, config, preserveMaterials, onPartsDetected }: 
   return (
     <>
       {/* 仅 HDR 环境光照明，降低强度防止过曝 */}
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 8, 5]} intensity={0.7} />
-      <directionalLight position={[-8, 5, 3]} intensity={0.5} />
-      <directionalLight position={[-6, 2, 6]} intensity={0.4} />
-      <directionalLight position={[0, 3, 8]} intensity={0.5} />
-      <Environment files={LOCAL_ENVIRONMENT_MAP} background={false} environmentIntensity={0.3} />
+      <ambientLight intensity={0.28} />
+      <directionalLight position={[5, 8, 5]} intensity={0.45} />
+      <directionalLight position={[-8, 5, 3]} intensity={0.3} />
+      <directionalLight position={[-6, 2, 6]} intensity={0.22} />
+      <directionalLight position={[0, 3, 8]} intensity={0.28} />
+      <Environment files={LOCAL_ENVIRONMENT_MAP} background={false} environmentIntensity={0.65} />
 
       {/* 3D模型 - 自动居中 */}
       <group ref={groupRef}>
@@ -271,7 +271,7 @@ export default function Configurator3D({ modelUrl, config, className = '', prese
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         shadows
-        gl={{ toneMapping: THREE.LinearToneMapping, toneMappingExposure: 1 }}
+        gl={{ toneMapping: THREE.LinearToneMapping, toneMappingExposure: 1.0 }}
         onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; }}
       >
         <Suspense fallback={null}>

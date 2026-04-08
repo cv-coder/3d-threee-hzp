@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useRef, useEffect, useCallback, useMemo } from 'react';
+import { Suspense, useRef, useEffect, useMemo } from 'react';
 import { Canvas, useLoader, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, ContactShadows, Center, useGLTF } from '@react-three/drei';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -10,18 +10,17 @@ import type { MaterialConfig, ModelPart, SurfaceFinishType } from '@/types/datab
 
 const LOCAL_ENVIRONMENT_MAP = '/hdr/studio_small_03_1k.hdr';
 
-// 全局复用同一个 DRACOLoader 实例
+// Reuse one DRACOLoader instance globally.
 const dracoLoader = new DRACOLoader();
 dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
 dracoLoader.setDecoderConfig({ type: 'js' });
 
 const SURFACE_FINISH_PRESETS: Record<SurfaceFinishType, { roughness: number; metalness: number; transparent?: boolean; opacity?: number; clearcoat?: number; clearcoatRoughness?: number; transmission?: number; thickness?: number; envMapIntensity?: number; ior?: number }> = {
-  'injection-color': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0, envMapIntensity: 1,transmission: 0 },  //注塑色
-  'paint-matte': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.5 }, //喷漆哑光
-  'electroplated-glossy': { roughness: 0.08, metalness: 1, envMapIntensity: 1,transmission: 0 }, //电镀亮面
-  'electroplated-matte': { roughness: 0.3, metalness: 1,clearcoat: 0,clearcoatRoughness: 0,envMapIntensity: 0.9,transmission: 0 }, //电镀哑光
-  'glass': { roughness: 0, metalness: .25, transmission: 1, thickness: 2, envMapIntensity: 4, clearcoat: 0,
-        clearcoatRoughness: 0 ,ior: 1.5}, //玻璃
+  'injection-color': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0, envMapIntensity: 1, transmission: 0 },
+  'paint-matte': { roughness: 0.5, metalness: 0, clearcoat: 0.5, clearcoatRoughness: 0.5 },
+  'electroplated-glossy': { roughness: 0.08, metalness: 1, envMapIntensity: 1, transmission: 0 },
+  'electroplated-matte': { roughness: 0.3, metalness: 1, clearcoat: 0, clearcoatRoughness: 0, envMapIntensity: 0.9, transmission: 0 },
+  'glass': { roughness: 0, metalness: 0.25, transmission: 1, thickness: 2, envMapIntensity: 4, clearcoat: 0, clearcoatRoughness: 0, ior: 1.5 },
 };
 
 interface Model3DProps {
@@ -36,68 +35,142 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
     (loader as GLTFLoader).setDRACOLoader(dracoLoader);
   });
 
-  // 克隆整个 scene，避免污染 useLoader 的全局缓存
+  // Clone scene to avoid mutating useLoader cache.
   const clonedScene = useMemo(() => gltf.scene.clone(true), [gltf]);
 
+  type OriginalMaterialSnapshot = {
+    material: THREE.Material | THREE.Material[];
+    color: THREE.Color;
+    roughness: number;
+    metalness: number;
+    transparent: boolean;
+    opacity: number;
+    clearcoat: number;
+    clearcoatRoughness: number;
+    transmission: number;
+    thickness: number;
+    ior: number;
+    envMapIntensity: number;
+    side: THREE.Side;
+    map: THREE.Texture | null;
+    normalMap: THREE.Texture | null;
+  };
+
   const meshRef = useRef<THREE.Group>(null);
-  const originalMaterials = useRef<Map<string, { color: THREE.Color; roughness: number; metalness: number; transparent: boolean; opacity: number; clearcoat: number; clearcoatRoughness: number }>>(new Map());
+  const originalMaterials = useRef<Map<string, OriginalMaterialSnapshot>>(new Map());
   const partsReported = useRef(false);
 
-  // 首次挂载时克隆材质（解除共享）、保存原始属性并上报部件列表
+  const getPrimaryMaterial = (material: THREE.Material | THREE.Material[]) => {
+    return Array.isArray(material) ? material[0] : material;
+  };
+
+  const toMaterialSnapshot = (material: THREE.Material | THREE.Material[]): OriginalMaterialSnapshot => {
+    const primary = getPrimaryMaterial(material);
+    const stdLike = primary as THREE.MeshStandardMaterial | undefined;
+    const physLike = primary as THREE.MeshPhysicalMaterial | undefined;
+
+    return {
+      material,
+      color: stdLike?.color?.clone?.() ?? new THREE.Color(0xffffff),
+      roughness: typeof stdLike?.roughness === 'number' ? stdLike.roughness : 0.5,
+      metalness: typeof stdLike?.metalness === 'number' ? stdLike.metalness : 0,
+      transparent: !!stdLike?.transparent,
+      opacity: typeof stdLike?.opacity === 'number' ? stdLike.opacity : 1,
+      clearcoat: typeof physLike?.clearcoat === 'number' ? physLike.clearcoat : 0,
+      clearcoatRoughness: typeof physLike?.clearcoatRoughness === 'number' ? physLike.clearcoatRoughness : 0,
+      transmission: typeof physLike?.transmission === 'number' ? physLike.transmission : 0,
+      thickness: typeof physLike?.thickness === 'number' ? physLike.thickness : 0,
+      ior: typeof physLike?.ior === 'number' ? physLike.ior : 1.5,
+      envMapIntensity: typeof stdLike?.envMapIntensity === 'number' ? stdLike.envMapIntensity : 1,
+      side: typeof stdLike?.side === 'number' ? stdLike.side : THREE.FrontSide,
+      map: stdLike?.map ?? null,
+      normalMap: stdLike?.normalMap ?? null,
+    };
+  };
+
+  const createPhysicalMaterial = (
+    material: THREE.Material | undefined,
+    original: OriginalMaterialSnapshot
+  ) => {
+    const stdLike = material as THREE.MeshStandardMaterial | undefined;
+    return new THREE.MeshPhysicalMaterial({
+      color: stdLike?.color?.clone?.() ?? original.color.clone(),
+      roughness: typeof stdLike?.roughness === 'number' ? stdLike.roughness : original.roughness,
+      metalness: typeof stdLike?.metalness === 'number' ? stdLike.metalness : original.metalness,
+      transparent: typeof stdLike?.transparent === 'boolean' ? stdLike.transparent : original.transparent,
+      opacity: typeof stdLike?.opacity === 'number' ? stdLike.opacity : original.opacity,
+      clearcoat: original.clearcoat,
+      clearcoatRoughness: original.clearcoatRoughness,
+      transmission: original.transmission,
+      thickness: original.thickness,
+      ior: original.ior,
+      envMapIntensity: original.envMapIntensity,
+      map: stdLike?.map ?? original.map,
+      normalMap: stdLike?.normalMap ?? original.normalMap,
+      side: typeof stdLike?.side === 'number' ? stdLike.side : original.side,
+    });
+  };
+
+  const ensurePhysicalMaterials = (mesh: THREE.Mesh, original: OriginalMaterialSnapshot) => {
+    if (Array.isArray(mesh.material)) {
+      const converted = mesh.material.map((mat) => (
+        mat instanceof THREE.MeshPhysicalMaterial ? mat : createPhysicalMaterial(mat, original)
+      ));
+      mesh.material = converted;
+      return converted;
+    }
+
+    if (mesh.material instanceof THREE.MeshPhysicalMaterial) {
+      return [mesh.material];
+    }
+
+    const converted = createPhysicalMaterial(mesh.material, original);
+    mesh.material = converted;
+    return [converted];
+  };
+
+  const disposeMaterialIfOwned = (material: THREE.Material | THREE.Material[]) => {
+    const list = Array.isArray(material) ? material : [material];
+    for (const mat of list) {
+      if (mat instanceof THREE.MeshPhysicalMaterial) {
+        mat.dispose();
+      }
+    }
+  };
+
+  // On first load, snapshot original materials and report parts.
   useEffect(() => {
     if (!meshRef.current) return;
+
+    originalMaterials.current.clear();
+    partsReported.current = false;
 
     const parts: ModelPart[] = [];
     let meshIndex = 0;
 
     meshRef.current.traverse((child) => {
-      if ((child as THREE.Mesh).isMesh) {
-        const mesh = child as THREE.Mesh;
-        // 给没有名字的 mesh 分配一个唯一名称
-        if (!mesh.name) {
-          mesh.name = `part_${meshIndex}`;
-        }
-        meshIndex++;
-
-        if (!originalMaterials.current.has(mesh.name)) {
-          // 转为 MeshPhysicalMaterial 以支持 clearcoat 等高级属性
-          const srcMat = mesh.material as THREE.MeshStandardMaterial;
-          const physical = new THREE.MeshPhysicalMaterial({
-            color: srcMat.color?.clone?.() ?? new THREE.Color(0xffffff),
-            roughness: srcMat.roughness ?? 0.5,
-            metalness: srcMat.metalness ?? 0,
-            transparent: srcMat.transparent ?? false,
-            opacity: srcMat.opacity ?? 1,
-            map: srcMat.map ?? null,
-            normalMap: srcMat.normalMap ?? null,
-            side: srcMat.side ?? THREE.FrontSide,
-          });
-          mesh.material = physical;
-
-          originalMaterials.current.set(mesh.name, {
-            color: physical.color.clone(),
-            roughness: physical.roughness,
-            metalness: physical.metalness,
-            transparent: physical.transparent,
-            opacity: physical.opacity,
-            clearcoat: physical.clearcoat,
-            clearcoatRoughness: physical.clearcoatRoughness,
-          });
-
-          parts.push({
-            name: mesh.name,
-            displayName: mesh.name.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-            color: '#' + physical.color.getHexString(),
-          });
-        }
+      if (!(child as THREE.Mesh).isMesh) return;
+      const mesh = child as THREE.Mesh;
+      if (!mesh.name) {
+        mesh.name = `part_${meshIndex}`;
       }
+      meshIndex++;
+
+      const snapshot = toMaterialSnapshot(mesh.material);
+      originalMaterials.current.set(mesh.name, snapshot);
+
+      parts.push({
+        name: mesh.name,
+        displayName: mesh.name.replace(/[_-]/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+        color: '#' + snapshot.color.getHexString(),
+      });
     });
 
     if (!partsReported.current && parts.length > 0) {
       partsReported.current = true;
       onPartsDetected?.(parts);
     }
-  }, [gltf, onPartsDetected]);
+  }, [clonedScene, onPartsDetected]);
 
   useEffect(() => {
     if (!meshRef.current) return;
@@ -106,9 +179,29 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
       if (!(child as THREE.Mesh).isMesh) return;
       const mesh = child as THREE.Mesh;
       if (!mesh.material) return;
-      const mat = mesh.material as THREE.MeshPhysicalMaterial;
 
-      const applyPreset = (preset: typeof SURFACE_FINISH_PRESETS[SurfaceFinishType]) => {
+      const original = originalMaterials.current.get(mesh.name);
+      if (!original) return;
+
+      // Strictly preserve original materials until user has interacted.
+      if (preserveMaterials) {
+        if (mesh.material !== original.material) {
+          disposeMaterialIfOwned(mesh.material);
+          mesh.material = original.material;
+        }
+        return;
+      }
+
+      const materials = ensurePhysicalMaterials(mesh, original);
+
+      const applyToAll = (updater: (mat: THREE.MeshPhysicalMaterial) => void) => {
+        for (const mat of materials) {
+          updater(mat);
+          mat.needsUpdate = true;
+        }
+      };
+
+      const applyPreset = (mat: THREE.MeshPhysicalMaterial, preset: typeof SURFACE_FINISH_PRESETS[SurfaceFinishType]) => {
         mat.roughness = preset.roughness;
         mat.metalness = preset.metalness;
         mat.transparent = !!preset.transparent;
@@ -122,68 +215,52 @@ function Model({ modelUrl, config, preserveMaterials = false, onPartsDetected }:
         mat.side = preset.transmission ? THREE.DoubleSide : THREE.FrontSide;
       };
 
-      const resetPhysical = () => {
-        mat.transparent = false;
-        mat.opacity = 1;
-        mat.clearcoat = 0;
-        mat.clearcoatRoughness = 0;
-        mat.transmission = 0;
-        mat.thickness = 0;
-        mat.ior = 1.5;
-        mat.envMapIntensity = 1;
-        mat.side = THREE.FrontSide;
-      };
-
-      const restoreOriginal = (orig: NonNullable<typeof original>) => {
+      const restoreOriginal = (mat: THREE.MeshPhysicalMaterial, orig: OriginalMaterialSnapshot) => {
         mat.roughness = orig.roughness;
         mat.metalness = orig.metalness;
         mat.transparent = orig.transparent;
         mat.opacity = orig.opacity;
         mat.clearcoat = orig.clearcoat;
         mat.clearcoatRoughness = orig.clearcoatRoughness;
-        mat.transmission = 0;
-        mat.thickness = 0;
-        mat.ior = 1.5;
-        mat.envMapIntensity = 1;
-        mat.side = THREE.FrontSide;
+        mat.transmission = orig.transmission;
+        mat.thickness = orig.thickness;
+        mat.ior = orig.ior;
+        mat.envMapIntensity = orig.envMapIntensity;
+        mat.side = orig.side;
       };
 
-      // 检查该部件是否有单独配置
       const partConfig = config.parts?.[mesh.name];
       const partFinish = partConfig?.finish;
       const globalFinish = config.surfaceFinish;
       const activeFinish = partFinish || globalFinish;
-      const original = originalMaterials.current.get(mesh.name);
 
       if (partConfig) {
-        mat.color = new THREE.Color(partConfig.color);
-        if (activeFinish) {
-          applyPreset(SURFACE_FINISH_PRESETS[activeFinish]);
-        } else {
-          resetPhysical();
-        }
-        mat.needsUpdate = true;
-      } else if (preserveMaterials && !config.color && !activeFinish) {
-        if (original) {
-          mat.color.copy(original.color);
-          restoreOriginal(original);
-          mat.needsUpdate = true;
-        }
-      } else {
-        if (config.color) {
-          mat.color = new THREE.Color(config.color);
-        } else if (original) {
-          mat.color.copy(original.color);
-        }
-        if (activeFinish) {
-          applyPreset(SURFACE_FINISH_PRESETS[activeFinish]);
-        } else if (original) {
-          restoreOriginal(original);
-        }
-        mat.needsUpdate = true;
+        applyToAll((mat) => {
+          mat.color.set(partConfig.color);
+          if (activeFinish) {
+            applyPreset(mat, SURFACE_FINISH_PRESETS[activeFinish]);
+          } else {
+            restoreOriginal(mat, original);
+          }
+        });
+        return;
       }
+
+      applyToAll((mat) => {
+        if (config.color) {
+          mat.color.set(config.color);
+        } else {
+          mat.color.copy(original.color);
+        }
+
+        if (activeFinish) {
+          applyPreset(mat, SURFACE_FINISH_PRESETS[activeFinish]);
+        } else {
+          restoreOriginal(mat, original);
+        }
+      });
     });
-  }, [config, preserveMaterials]);
+  }, [config, preserveMaterials, clonedScene]);
 
   return (
     <group ref={meshRef}>
@@ -200,7 +277,7 @@ interface Configurator3DProps {
   onPartsDetected?: (parts: ModelPart[]) => void;
 }
 
-/** 加载后自动适配相机到模型包围盒 */
+/** Auto-fit camera to model bounds after the model loads. */
 function AutoFit({ modelRef }: { modelRef: React.RefObject<THREE.Group | null> }) {
   const { camera } = useThree();
   const fitted = useRef(false);
@@ -238,7 +315,7 @@ function SceneContent({ modelUrl, config, preserveMaterials, onPartsDetected }: 
 
   return (
     <>
-      {/* 仅 HDR 环境光照明，降低强度防止过曝 */}
+      {/* Lighting setup */}
       <ambientLight intensity={0.28} />
       <directionalLight position={[5, 8, 5]} intensity={0.45} />
       <directionalLight position={[-8, 5, 3]} intensity={0.3} />
@@ -246,17 +323,17 @@ function SceneContent({ modelUrl, config, preserveMaterials, onPartsDetected }: 
       <directionalLight position={[0, 3, 8]} intensity={0.28} />
       <Environment files={LOCAL_ENVIRONMENT_MAP} background={false} environmentIntensity={0.65} />
 
-      {/* 3D模型 - 自动居中 */}
+      {/* 3D model, auto-centered */}
       <group ref={groupRef}>
         <Center>
           <Model modelUrl={modelUrl} config={config} preserveMaterials={preserveMaterials} onPartsDetected={onPartsDetected} />
         </Center>
       </group>
 
-      {/* 自动适配相机（仅测量模型，不含阴影等） */}
+      {/* Auto-fit camera */}
       <AutoFit modelRef={groupRef} />
 
-      {/* 控制器 */}
+      {/* Controls */}
       <OrbitControls
         enablePan={true}
         enableZoom={true}
@@ -279,7 +356,7 @@ export default function Configurator3D({ modelUrl, config, className = '', prese
         </Suspense>
       </Canvas>
 
-      {/* 加载提示 */}
+      {/* Viewer hint */}
       <div className="absolute bottom-2 right-2 pointer-events-none">
         <div className="bg-white/90 px-3 py-1.5 rounded-lg shadow-lg">
           <p className="text-xs text-gray-500">拖动旋转 • 滚轮缩放</p>
@@ -289,7 +366,7 @@ export default function Configurator3D({ modelUrl, config, className = '', prese
   );
 }
 
-// 预加载模型
+// Preload model
 export function preloadModel(url: string) {
   useGLTF.preload(url);
 }

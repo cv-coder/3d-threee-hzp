@@ -4,6 +4,8 @@ import { sql } from '@/lib/db';
 import { ACCESSORY_CATEGORY_OPTIONS } from '@/lib/product-options';
 import type { AccessoryCategory, ApiResponse } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 async function ensureAccessoryCategoryTable() {
   await sql`
     CREATE TABLE IF NOT EXISTS accessory_categories (

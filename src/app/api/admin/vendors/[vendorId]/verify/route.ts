@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/api-middleware';
 import { sql } from '@/lib/db';
 import type { ApiResponse } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 function getVendorIdFromPath(pathname: string): string | null {
   const segments = pathname.split('/').filter(Boolean);
   const idx = segments.findIndex((s) => s === 'vendors');

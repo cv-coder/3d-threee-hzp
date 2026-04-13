@@ -4,6 +4,8 @@ import { sql } from '@/lib/db';
 import { uploadSnapshot } from '@/lib/s3';
 import type { ApiResponse, DesignSession } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/design/save
  * 保存设计方案（仅买家）

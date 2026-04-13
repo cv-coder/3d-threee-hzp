@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/api-middleware';
 import { sql } from '@/lib/db';
 import type { ApiResponse } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/admin/vendors
  * 管理员获取厂家列表（含认证状态）

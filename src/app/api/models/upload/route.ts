@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { upload3DModel } from '@/lib/s3';
 
+export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 type Role = 'vendor' | 'admin' | 'buyer';

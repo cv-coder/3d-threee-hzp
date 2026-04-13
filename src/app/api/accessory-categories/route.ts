@@ -4,6 +4,8 @@ import { sql } from '@/lib/db';
 import { ACCESSORY_CATEGORY_OPTIONS } from '@/lib/product-options';
 import type { ApiResponse, AccessoryCategory } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 export const GET = withErrorHandler(async (_req: NextRequest) => {
   try {
     const categories = await sql<AccessoryCategory[]>`

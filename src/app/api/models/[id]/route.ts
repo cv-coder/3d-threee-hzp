@@ -2,6 +2,8 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * DELETE /api/models/[id] - 删除模型资产
  */

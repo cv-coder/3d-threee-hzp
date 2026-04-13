@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { sql } from '@/lib/db';
 import type { ApiResponse } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 interface BootstrapAdminBody {
   email: string;
   password: string;

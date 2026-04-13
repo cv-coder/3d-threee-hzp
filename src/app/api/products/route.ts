@@ -3,6 +3,8 @@ import { withAuth, withErrorHandler } from '@/lib/api-middleware';
 import { sql } from '@/lib/db';
 import type { ApiResponse, Product } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/products
  * 获取产品列表

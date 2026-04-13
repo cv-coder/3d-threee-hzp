@@ -3,6 +3,8 @@ import { withAuth } from '@/lib/api-middleware';
 import { sql } from '@/lib/db';
 import type { ApiResponse, Inquiry } from '@/lib/types';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/inquiries
  * 创建询价（仅买家）

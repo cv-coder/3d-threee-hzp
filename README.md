@@ -134,6 +134,44 @@ npm run build            # 构建生产版本
 npm run start            # 启动生产服务器
 ```
 
+## 使用 PM2 部署（生产）
+
+### 1) 安装 PM2
+
+```bash
+npm install -g pm2
+```
+
+### 2) 安装依赖并构建
+
+```bash
+npm install
+npm run build
+```
+
+### 3) 启动应用
+
+```bash
+PORT=3000 pm2 start npm --name aether3d -- start
+```
+
+### 4) 设置开机自启
+
+```bash
+pm2 startup
+pm2 save
+```
+
+### 5) 常用 PM2 运维命令
+
+```bash
+pm2 status
+pm2 logs aether3d
+pm2 restart aether3d
+pm2 stop aether3d
+pm2 delete aether3d
+```
+
 ## 项目结构
 
 ```

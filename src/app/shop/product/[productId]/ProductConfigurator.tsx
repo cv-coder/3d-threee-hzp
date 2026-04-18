@@ -49,7 +49,8 @@ export default function ProductConfigurator({
     }
     return raw;
   });
-  const [userModified, setUserModified] = useState(false);
+  const hasSavedConfig = !!savedConfig && Object.keys(savedConfig).length > 0;
+  const [userModified, setUserModified] = useState(hasSavedConfig);
   const [modelParts, setModelParts] = useState<ModelPart[]>([]);
   const [saving, setSaving] = useState(false);
   const [inquiring, setInquiring] = useState(false);

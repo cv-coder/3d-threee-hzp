@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { formatPrice } from '@/lib/utils';
 import { ArrowLeft, Package, ShieldCheck } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 interface VendorShopPageProps {
   params: Promise<{ vendorId: string }>;
 }

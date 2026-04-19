@@ -6,11 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { formatPrice } from '@/lib/utils';
 import { Package, User } from 'lucide-react';
 
+export const dynamic = 'force-dynamic';
+
 export default async function ShopPage() {
   const session = await auth();
   // 获取所有上架的产品（包含厂家信息）
   const products = await db.findMany<any>(
-    `SELECT 
+    `SELECT
       p.*,
       v.company_name as vendor_company_name,
       v.email as vendor_email
